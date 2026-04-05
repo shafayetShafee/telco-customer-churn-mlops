@@ -9,8 +9,9 @@ telco:
 
 processed_target_col:
   type: pandas.ParquetDataset
-  filepath: data/03_primary/processed_target_col.pq
+  filepath: data/03_primary/processed_target_col.parquet
 
 processed_features_data:
   type: pandas.ParquetDataset
-  filepath: data/03_primary/processed_features_data.pq
+  filepath: data/03_primary/processed_features_data.parquet
+
