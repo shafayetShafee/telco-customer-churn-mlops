@@ -6,3 +6,11 @@
 telco:
   type: pandas.CSVDataset
   filepath: data/01_raw/telco-customer-churn.csv
+
+processed_target_col:
+  type: pandas.ParquetDataset
+  filepath: data/03_primary/processed_target_col.pq
+
+processed_features_data:
+  type: pandas.ParquetDataset
+  filepath: data/03_primary/processed_features_data.pq
