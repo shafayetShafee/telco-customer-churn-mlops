@@ -19,6 +19,10 @@ X_train:
   type: pandas.ParquetDataset
   filepath: data/05_model_input/X_train.parquet
 
+X_calib:
+  type: pandas.ParquetDataset
+  filepath: data/05_model_input/X_calib.parquet
+
 X_test:
   type: pandas.ParquetDataset
   filepath: data/05_model_input/X_test.parquet
@@ -26,6 +30,10 @@ X_test:
 y_train:
   type: pickle.PickleDataset
   filepath: data/05_model_input/y_train.pkl
+
+y_calib:
+  type: pickle.PickleDataset
+  filepath: data/05_model_input/y_calib.pkl
 
 y_test:
   type: pickle.PickleDataset

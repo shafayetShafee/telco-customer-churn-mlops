@@ -4,7 +4,9 @@ generated using Kedro 1.2.0
 """
 
 from kedro.pipeline import Node, Pipeline  # noqa
-from .nodes_ml.split_data import train_test_split_data
+from .nodes_ml.split_data import (
+    train_calib_test_split_data
+)
 from .nodes_ml.hyperparameter_tuning import tune_xgb_pr_auc
 from .nodes_ml.threshold_tuning import (
     tune_threshold,
@@ -20,16 +22,17 @@ def create_pipeline(**kwargs) -> Pipeline:
     return Pipeline(
         [
             Node(
-                func=train_test_split_data,
+                func=train_calib_test_split_data,
                 inputs=[
                     "processed_features_data",
                     "processed_target_col",
                     "params:split_options"
                 ],
                 outputs=[
-                    "X_train", "X_test",
-                    "y_train", "y_test"
+                    "X_train", "X_calib", "X_test",
+                    "y_train", "y_calib", "y_test"
                 ],
+                name="data_split_node",
                 tags=["training"]
             ),
             Node(

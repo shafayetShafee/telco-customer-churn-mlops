@@ -1,6 +1,7 @@
 split_options:
-  test_size: 0.2
-  random_state: 1071
+  test_size: 0.15
+  calib_size: 0.15
+  random_state: 1070
   
 project_seed: 1070
 optuna_n_trials: 50
