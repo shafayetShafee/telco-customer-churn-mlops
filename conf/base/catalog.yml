@@ -32,8 +32,8 @@ y_test:
   filepath: data/05_model_input/y_test.pkl
 
 optuna_best_params:
-  type: yaml.YAMLDataset
-  filepath: data/06_models/best_params.yml
+  type: pickle.PickleDataset
+  filepath: data/06_models/optuna_best_params.pkl
 
 optuna_study:
   type: pickle.PickleDataset
@@ -41,4 +41,20 @@ optuna_study:
 
 optuna_best_model:
   type: pickle.PickleDataset
-  filepath: data/06_models/best_model.pkl
+  filepath: data/06_models/optuna_best_model.pkl
+
+tuning_threshold_df:
+  type: pandas.ParquetDataset
+  filepath: data/06_models/tuning_threshold_df.parquet
+
+best_threshold:
+  type: pickle.PickleDataset
+  filepath: data/06_models/best_threshold.pkl
+
+threshold_metrics_plot:
+  type: matplotlib.MatplotlibDataset
+  filepath: data/08_reporting/threshold_metrics_plot.png
+  save_args:
+    format: png
+    dpi: 300
+    bbox_inches: tight

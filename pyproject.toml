@@ -20,7 +20,8 @@ dependencies = [
     "kedro-viz~=12.3.0",
     "scikit-learn~=1.7.0",
     "optuna~=4.8.0",
-    "xgboost~=3.2.0"
+    "xgboost~=3.2.0",
+    "matplotlib~=3.10.0"
 ]
 
 [project.scripts]

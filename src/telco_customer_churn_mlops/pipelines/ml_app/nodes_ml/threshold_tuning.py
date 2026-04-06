@@ -4,6 +4,9 @@ from typing import (
 
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
+
 from sklearn.base import ClassifierMixin
 from sklearn.metrics import (
     accuracy_score,
@@ -196,3 +199,64 @@ def tune_threshold(
     best_threshold = _select_threshold_by_recall(df, min_recall)
 
     return df, best_threshold
+
+
+
+def plot_threshold_metrics(
+    df: pd.DataFrame,
+    best_threshold: Optional[float] = None,
+    title: Optional[str] = "Threshold Tuning Metrics"
+) -> Figure:
+    """
+    Generate a publication-quality plot of classification metrics across thresholds.
+
+    Args:
+        df (pd.DataFrame):
+            DataFrame containing threshold evaluation results. Must include
+            a 'threshold' column and metric columns (e.g., 'precision',
+            'recall', 'f1', 'accuracy').
+        title (Optional[str], optional):
+            Title of the plot. Defaults to "Threshold Tuning Metrics".
+
+    Returns:
+        Figure:
+            A Matplotlib Figure object ready for saving via Kedro catalog.
+
+    Raises:
+        ValueError:
+            If required columns are missing or DataFrame is empty.
+    """
+
+    if df.empty:
+        raise ValueError("Input DataFrame is empty")
+
+    if "threshold" not in df.columns:
+        raise ValueError("DataFrame must contain a 'threshold' column")
+
+    plot_df = df.set_index("threshold")
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+    plot_df.plot(ax=ax, linewidth=2)
+
+    if best_threshold is not None:
+        ax.axvline(
+            x=best_threshold,
+            linestyle="--",
+            linewidth=2,
+            label=f"Selected Threshold ({best_threshold:.2f})"
+        )
+
+    ax.set_title(title, fontsize=14, fontweight="bold")
+    ax.set_xlabel("Decision Threshold", fontsize=12)
+    ax.set_ylabel("Score", fontsize=12)
+    ax.set_xlim(0.0, 1.0)
+    ax.set_ylim(0.0, 1.05)
+    ax.grid(True, linestyle="--", alpha=0.6)
+    ax.legend(
+        title="Metrics",
+        loc="best",
+        frameon=True
+    )
+    fig.tight_layout()
+    plt.close(fig)
+    return fig

@@ -2,5 +2,6 @@ split_options:
   test_size: 0.2
   random_state: 1071
   
-
+project_seed: 1070
 optuna_n_trials: 50
+min_recall: 0.80
