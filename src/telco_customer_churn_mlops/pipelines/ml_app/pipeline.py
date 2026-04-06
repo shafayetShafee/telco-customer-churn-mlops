@@ -39,14 +39,12 @@ def create_pipeline(**kwargs) -> Pipeline:
                 func=tune_xgb_pr_auc,
                 inputs=[
                     "X_train", "y_train",
-                    "X_test", "y_test",
-                    "params:optuna_n_trials",
-                    "params:project_seed"
+                    "params:optuna_options",
                 ],
                 outputs=[
                     "optuna_best_model",
                     "optuna_best_params",
-                    "optuna_study"
+                    "optuna_search"
                 ],
                 name="hyperparameter_tuning_node",
                 tags=["training"]
@@ -55,7 +53,7 @@ def create_pipeline(**kwargs) -> Pipeline:
                 func=tune_threshold,
                 inputs=[
                     "optuna_best_model",
-                    "X_train", "y_train",
+                    "X_calib", "y_calib",
                     "params:min_recall"
                 ],
                 outputs=[

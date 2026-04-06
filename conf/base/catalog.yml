@@ -43,9 +43,9 @@ optuna_best_params:
   type: pickle.PickleDataset
   filepath: data/06_models/optuna_best_params.pkl
 
-optuna_study:
+optuna_search:
   type: pickle.PickleDataset
-  filepath: data/06_models/optuna_study.pkl
+  filepath: data/06_models/optuna_search.pkl
 
 optuna_best_model:
   type: pickle.PickleDataset
