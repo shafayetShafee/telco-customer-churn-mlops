@@ -10,6 +10,10 @@ from .nodes_ml.threshold_tuning import (
     tune_threshold,
     plot_threshold_metrics
 )
+from .nodes_ml.model_train import (
+    train_xgb_model,
+    evaluate_model
+)
 
 
 def create_pipeline(**kwargs) -> Pipeline:
@@ -66,6 +70,27 @@ def create_pipeline(**kwargs) -> Pipeline:
                 ],
                 outputs="threshold_metrics_plot",
                 name="plot_threshold_metrics_node",
+                tags=["training"]
+            ),
+            Node(
+                func=train_xgb_model,
+                inputs=[
+                    "X_train", "y_train",
+                    "optuna_best_params"
+                ],
+                outputs="xgb_model",
+                name="train_xgb_model_node",
+                tags=["training"]
+            ),
+            Node(
+                func=evaluate_model,
+                inputs=[
+                    "xgb_model",
+                    "X_test", "y_test", 
+                    "best_threshold"
+                ],
+                outputs="classification_report_df",
+                name="model_evaluate_node",
                 tags=["training"]
             )
         ]

@@ -58,3 +58,11 @@ threshold_metrics_plot:
     format: png
     dpi: 300
     bbox_inches: tight
+
+xgb_model:
+  type: pickle.PickleDataset
+  filepath: data/06_models/xgb_model.pkl
+
+classification_report_df:
+  type: pandas.ParquetDataset
+  filepath: data/08_reporting/classification_report_df.parquet
