@@ -105,9 +105,7 @@ def extract_encode_target_col(
     y_enc = (
         df[target_col]
         .map({'Yes': 1, 'No': 0})
-        .to_frame(
-            name=target_col.lower()
-        )
+        .rename(target_col.lower())
     )
    
     return y_enc
