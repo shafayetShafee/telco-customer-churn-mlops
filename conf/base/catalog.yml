@@ -8,10 +8,37 @@ telco:
   filepath: data/01_raw/telco-customer-churn.csv
 
 processed_target_col:
-  type: pandas.ParquetDataset
-  filepath: data/03_primary/processed_target_col.parquet
+  type: pickle.PickleDataset
+  filepath: data/03_primary/processed_target_col.pkl
 
 processed_features_data:
   type: pandas.ParquetDataset
   filepath: data/03_primary/processed_features_data.parquet
 
+X_train:
+  type: pandas.ParquetDataset
+  filepath: data/05_model_input/X_train.parquet
+
+X_test:
+  type: pandas.ParquetDataset
+  filepath: data/05_model_input/X_test.parquet
+
+y_train:
+  type: pickle.PickleDataset
+  filepath: data/05_model_input/y_train.pkl
+
+y_test:
+  type: pickle.PickleDataset
+  filepath: data/05_model_input/y_test.pkl
+
+optuna_best_params:
+  type: yaml.YAMLDataset
+  filepath: data/06_models/best_params.yml
+
+optuna_study:
+  type: pickle.PickleDataset
+  filepath: data/06_models/optuna_study.pkl
+
+optuna_best_model:
+  type: pickle.PickleDataset
+  filepath: data/06_models/best_model.pkl
