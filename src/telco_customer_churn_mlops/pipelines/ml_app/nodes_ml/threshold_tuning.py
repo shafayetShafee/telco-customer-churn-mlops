@@ -1,29 +1,26 @@
-from typing import (
-    Iterable, Optional, Union, Tuple
-)
+from collections.abc import Iterable
 
-import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 from matplotlib.figure import Figure
-
 from sklearn.base import ClassifierMixin
 from sklearn.metrics import (
     accuracy_score,
+    confusion_matrix,
+    f1_score,
     precision_score,
     recall_score,
-    f1_score,
-    confusion_matrix
 )
 from sklearn.utils.validation import check_is_fitted
 
 
 def _evaluate_thresholds(
     model: ClassifierMixin,
-    X: Union[np.ndarray, pd.DataFrame],
-    y: Union[np.ndarray, pd.Series],
-    thresholds: Optional[Iterable[float]] = None,
-    pos_label: Union[int, str] = 1,
+    X: np.ndarray | pd.DataFrame,
+    y: np.ndarray | pd.Series,
+    thresholds: Iterable[float] | None = None,
+    pos_label: int | str = 1,
     use_proba: bool = True,
     zero_division: int = 0
 ) -> pd.DataFrame:
@@ -76,20 +73,19 @@ def _evaluate_thresholds(
             scores = model.predict_proba(X)[:, 1]
         else:
             raise ValueError("Model does not support predict_proba")
-    else:
-        if hasattr(model, "decision_function"):
-            scores = model.decision_function(X)
+    elif hasattr(model, "decision_function"):
+        scores = model.decision_function(X)
 
-            denom = scores.max() - scores.min()
-            scores = (scores - scores.min()) / denom if denom > 0 else np.zeros_like(scores)
-        else:
-            raise ValueError("Model does not support decision_function")
+        denom = scores.max() - scores.min()
+        scores = (scores - scores.min()) / denom if denom > 0 else np.zeros_like(scores)
+    else:
+        raise ValueError("Model does not support decision_function")
 
     if thresholds is None:
         thresholds = np.linspace(0, 1, 101)
 
     results = []
-    
+
     for t in thresholds:
         y_pred = (scores >= t).astype(int)
 
@@ -155,10 +151,10 @@ def _select_threshold_by_recall(
 
 def tune_threshold(
     model: ClassifierMixin,
-    X_valid: Union[pd.DataFrame, np.ndarray],
-    y_valid: Union[pd.Series, np.ndarray],
+    X_valid: pd.DataFrame | np.ndarray,
+    y_valid: pd.Series | np.ndarray,
     min_recall: float
-) -> Tuple[pd.DataFrame, float]:
+) -> tuple[pd.DataFrame, float]:
     """
     Evaluate model performance across thresholds and select an optimal threshold
     based on a minimum recall constraint.
@@ -204,8 +200,8 @@ def tune_threshold(
 
 def plot_threshold_metrics(
     df: pd.DataFrame,
-    best_threshold: Optional[float] = None,
-    title: Optional[str] = "Threshold Tuning Metrics"
+    best_threshold: float | None = None,
+    title: str | None = "Threshold Tuning Metrics"
 ) -> Figure:
     """
     Generate a publication-quality plot of classification metrics across thresholds.

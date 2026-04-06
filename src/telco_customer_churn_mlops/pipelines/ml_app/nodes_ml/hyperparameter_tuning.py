@@ -1,20 +1,19 @@
-from typing import Tuple, Dict, Any, Union
-import numpy as np
-import pandas as pd
-import optuna
+from typing import Any
 
-from xgboost import XGBClassifier
+import optuna
+import pandas as pd
 from sklearn.metrics import average_precision_score
+from xgboost import XGBClassifier
 
 
 def tune_xgb_pr_auc(
     X_train: pd.DataFrame,
-    y_train: Union[pd.Series, pd.DataFrame],
+    y_train: pd.Series | pd.DataFrame,
     X_valid: pd.DataFrame,
-    y_valid: Union[pd.Series, pd.DataFrame],
+    y_valid: pd.Series | pd.DataFrame,
     n_trials: int = 50,
     random_state: int = 42
-) -> Tuple[XGBClassifier, Dict[str, Any], optuna.Study]:
+) -> tuple[XGBClassifier, dict[str, Any], optuna.Study]:
     """
     Perform hyperparameter tuning for an XGBoost classifier using Optuna,
     optimizing for PR-AUC (Average Precision).

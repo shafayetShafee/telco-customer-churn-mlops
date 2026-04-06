@@ -5,9 +5,9 @@ Kedro Pipelines
 
 import re
 import unicodedata
-from typing import List
 
 import pandas as pd
+
 
 def _clean_names(
     df: pd.DataFrame,
@@ -82,7 +82,7 @@ def _clean_names(
 
 
 def extract_encode_target_col(
-    df: pd.DataFrame, 
+    df: pd.DataFrame,
     target_col: str
 ) -> pd.Series:
     """
@@ -107,13 +107,13 @@ def extract_encode_target_col(
         .map({'Yes': 1, 'No': 0})
         .rename(target_col.lower())
     )
-   
+
     return y_enc
 
 
 def extract_preprocess_features_data(
     df: pd.DataFrame,
-    features: List[str]
+    features: list[str]
 ) -> pd.DataFrame:
     """
     Extract and preprocess feature columns from a DataFrame.
@@ -144,12 +144,12 @@ def extract_preprocess_features_data(
     feat_df = df[features]
 
     binary_cols = [
-        'gender', 'Partner', 'Dependents', 
+        'gender', 'Partner', 'Dependents',
         'PhoneService', 'PaperlessBilling'
     ]
     multi_cat_cols = ['Contract', 'PaymentMethod']
     internet_service_cols = [
-        'OnlineSecurity', 'OnlineBackup', 'DeviceProtection', 
+        'OnlineSecurity', 'OnlineBackup', 'DeviceProtection',
         'TechSupport', 'StreamingTV', 'StreamingMovies'
     ]
 

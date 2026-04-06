@@ -1,21 +1,19 @@
 import logging
-from typing import Dict, Union
 
 import numpy as np
 import pandas as pd
-from xgboost import XGBClassifier
-
 from sklearn.base import ClassifierMixin
 from sklearn.metrics import classification_report
-from sklearn.utils.validation import check_X_y, check_is_fitted
+from sklearn.utils.validation import check_is_fitted, check_X_y
+from xgboost import XGBClassifier
 
 logger = logging.getLogger(__name__)
 
 
 def train_xgb_model(
-    X_train: Union[pd.DataFrame, np.ndarray],
-    y_train: Union[pd.Series, np.ndarray],
-    best_params: Dict
+    X_train: pd.DataFrame | np.ndarray,
+    y_train: pd.Series | np.ndarray,
+    best_params: dict
 ) -> XGBClassifier:
     """
     Train an XGBoost classifier using the provided training data and best hyperparameters.
@@ -43,8 +41,8 @@ def train_xgb_model(
         raise ValueError("X_train and y_train must not be None")
 
     X_validated, y_validated = check_X_y(
-        X=X_train, 
-        y=y_train, 
+        X=X_train,
+        y=y_train,
         ensure_all_finite='allow-nan',
         accept_sparse=True
     )
@@ -57,8 +55,8 @@ def train_xgb_model(
 
 def evaluate_model(
     model: ClassifierMixin,
-    X_test: Union[pd.DataFrame, np.ndarray],
-    y_test: Union[pd.Series, np.ndarray],
+    X_test: pd.DataFrame | np.ndarray,
+    y_test: pd.Series | np.ndarray,
     threshold: float
 ) -> pd.DataFrame:
     """
@@ -102,7 +100,7 @@ def evaluate_model(
         ) from e
 
     X_valid, y_valid = check_X_y(
-        X_test, 
+        X_test,
         y_test,
         ensure_all_finite='allow-nan',
         accept_sparse=True

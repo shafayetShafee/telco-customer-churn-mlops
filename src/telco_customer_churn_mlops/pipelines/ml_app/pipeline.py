@@ -22,7 +22,7 @@ def create_pipeline(**kwargs) -> Pipeline:
             Node(
                 func=train_test_split_data,
                 inputs=[
-                    "processed_features_data", 
+                    "processed_features_data",
                     "processed_target_col",
                     "params:split_options"
                 ],
@@ -86,7 +86,7 @@ def create_pipeline(**kwargs) -> Pipeline:
                 func=evaluate_model,
                 inputs=[
                     "xgb_model",
-                    "X_test", "y_test", 
+                    "X_test", "y_test",
                     "best_threshold"
                 ],
                 outputs="classification_report_df",
