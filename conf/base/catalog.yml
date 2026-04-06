@@ -5,7 +5,7 @@
 
 telco:
   type: pandas.CSVDataset
-  filepath: data/01_raw/telco-customer-churn.csv
+  filepath: data/01_raw/telco.csv
 
 processed_target_col:
   type: pickle.PickleDataset
