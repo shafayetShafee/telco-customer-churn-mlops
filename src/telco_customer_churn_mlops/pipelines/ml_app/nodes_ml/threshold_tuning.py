@@ -1,4 +1,5 @@
 from collections.abc import Iterable
+from typing import Any
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -12,61 +13,94 @@ from sklearn.metrics import (
     precision_score,
     recall_score,
 )
-from sklearn.utils.validation import check_is_fitted
+# from sklearn.utils.validation import check_is_fitted
+# from sklearn.exceptions import NotFittedError
+from mapie.calibration import VennAbersCalibrator
+from .utils import _ensure_fitted
 
 
 def _evaluate_thresholds(
-    model: ClassifierMixin,
+    model: ClassifierMixin | VennAbersCalibrator,
     X: np.ndarray | pd.DataFrame,
     y: np.ndarray | pd.Series,
+    *,
     thresholds: Iterable[float] | None = None,
-    pos_label: int | str = 1,
-    use_proba: bool = True,
-    zero_division: int = 0
+    **kwargs: Any
 ) -> pd.DataFrame:
     """
     Evaluate classification performance across multiple decision thresholds.
 
-    This function computes common classification metrics for a range of
-    probability (or score) thresholds. It supports models that provide either
-    `predict_proba` or `decision_function`, and evaluates how metrics such as
-    precision, recall, F1-score, TPR, FPR, and accuracy vary with the threshold.
+    This function computes common classification metrics over a range of
+    decision thresholds. It supports models that provide either
+    ``predict_proba`` or ``decision_function`` and evaluates how metrics
+    such as precision, recall, F1-score, true positive rate (TPR),
+    false positive rate (FPR), and accuracy vary with the threshold.
 
-    Args:
-        model (ClassifierMixin):
-            A fitted scikit-learn compatible classification model.
-        X (Union[np.ndarray, pd.DataFrame]):
-            Feature data used for generating predictions.
-        y (Union[np.ndarray, pd.Series]):
-            Ground truth target labels.
-        thresholds (Optional[Iterable[float]]):
-            Iterable of threshold values to evaluate. If None, defaults to
-            101 evenly spaced values between 0 and 1.
-        pos_label (Union[int, str]):
+    Parameters
+    ----------
+    model : ClassifierMixin | VennAbersCalibrator
+        A fitted classification model or calibrated model that supports
+        probability prediction via ``predict_proba`` or scoring via
+        ``decision_function``.
+
+    X : np.ndarray or pd.DataFrame
+        Feature data used for generating predictions.
+
+    y : np.ndarray or pd.Series
+        Ground truth target labels.
+
+    thresholds : Iterable[float], optional
+        Iterable of threshold values to evaluate. If None, defaults to
+        101 evenly spaced values between 0 and 1.
+
+    **kwargs : dict, optional
+        Additional evaluation parameters:
+
+        pos_label : int or str, default=1
             The label considered as the positive class.
-        use_proba (bool):
-            If True, use `predict_proba` to obtain scores. If False, use
-            `decision_function` and normalize scores to [0, 1].
-        zero_division (int):
-            Value to return when there is a zero division in precision or recall.
 
-    Returns:
-        pd.DataFrame:
-            DataFrame containing evaluation metrics for each threshold with columns:
-            - threshold: decision threshold
-            - precision: precision score
-            - recall: recall score
-            - f1: F1-score
-            - tpr: true positive rate (recall)
-            - fpr: false positive rate
-            - accuracy: classification accuracy
+        use_proba : bool, default=True
+            If True, use ``predict_proba`` to obtain scores. If False,
+            use ``decision_function`` and normalize scores to [0, 1].
+
+        zero_division : int, default=0
+            Value to return when there is a zero division in precision
+            or recall.
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame containing evaluation metrics for each threshold with
+        the following columns:
+
+        - ``threshold`` : decision threshold
+        - ``precision`` : precision score
+        - ``recall`` : recall score
+        - ``f1`` : F1-score
+        - ``tpr`` : true positive rate (recall)
+        - ``fpr`` : false positive rate
+        - ``accuracy`` : classification accuracy
+
+    Notes
+    -----
+    - The model is assumed to be already fitted.
+    - When using ``decision_function``, scores are normalized to [0, 1]
+    before thresholding.
     """
-    try:
-        check_is_fitted(model)
-    except Exception as e:
-        raise ValueError(
-            "The model appears to be unfitted. Call `fit()` before using this function."
-        ) from e
+    pos_label = kwargs.get("pos_label", 1)
+    use_proba = kwargs.get("use_proba", True)
+    zero_division = kwargs.get("zero_division", 0)
+
+    # not_fitted_msg = "The model appears to be unfitted. Call `fit()` before using this function."
+    # if hasattr(model, "is_fitted"):
+    #     if not getattr(model, "is_fitted"):
+    #         raise ValueError(not_fitted_msg)
+    # else:
+    #     try:
+    #         check_is_fitted(model)
+    #     except NotFittedError as e:
+    #         raise ValueError(not_fitted_msg) from e
+    _ensure_fitted(model)
 
     if use_proba:
         if hasattr(model, "predict_proba"):
@@ -120,22 +154,26 @@ def _select_threshold_by_recall(
     Among the valid thresholds, it selects the highest threshold value to favor
     a more conservative decision boundary.
 
-    Args:
-        df (pd.DataFrame):
-            DataFrame containing evaluation metrics for different thresholds.
-            Must include at least the columns:
-            - 'threshold': threshold values
-            - 'recall': recall scores corresponding to each threshold
-        min_recall (float):
-            Minimum recall value required for threshold selection.
+    Parameters
+    ----------
+    df : pd.DataFrame
+    DataFrame containing evaluation metrics for different thresholds.
+    Must include at least the columns:
+    - 'threshold': threshold values
+    - 'recall': recall scores corresponding to each threshold
+    
+    min_recall : float
+    Minimum recall value required for threshold selection.
 
-    Returns:
-        float:
-            Selected threshold value that satisfies the recall constraint.
+    Returns
+    -------
+    float
+        Selected threshold value that satisfies the recall constraint.
 
-    Raises:
-        ValueError:
-            If no threshold satisfies the minimum recall requirement.
+    Raises
+    ------
+    ValueError
+        If no threshold satisfies the minimum recall requirement.
     """
 
     valid = df[df["recall"] >= min_recall]
@@ -150,44 +188,66 @@ def _select_threshold_by_recall(
 
 
 def tune_threshold(
-    model: ClassifierMixin,
-    X_valid: pd.DataFrame | np.ndarray,
-    y_valid: pd.Series | np.ndarray,
+    model: ClassifierMixin | VennAbersCalibrator,
+    X_calib: pd.DataFrame | np.ndarray,
+    y_calib: pd.Series | np.ndarray,
     min_recall: float
 ) -> tuple[pd.DataFrame, float]:
     """
-    Evaluate model performance across thresholds and select an optimal threshold
-    based on a minimum recall constraint.
+    Evaluate model performance across probability thresholds and select an
+    optimal threshold based on a minimum recall constraint.
 
-    This function computes classification metrics over a range of thresholds
-    using the validation dataset, then selects the highest threshold that
-    achieves at least the specified minimum recall.
+    This function computes classification metrics over a range of decision
+    thresholds using the provided calibration dataset. It then selects the
+    highest threshold that satisfies the specified minimum recall.
 
-    Args:
-        model (ClassifierMixin):
-            A fitted scikit-learn compatible classification model.
-        X_valid (Union[pd.DataFrame, np.ndarray]):
-            Validation feature data.
-        y_valid (Union[pd.Series, np.ndarray]):
-            Validation target labels.
-        min_recall (float):
-            Minimum recall value required for threshold selection. Must be
-            between 0 and 1.
+    The input model can be either:
+    - A fitted scikit-learn classifier
+    - A fitted Venn-Abers calibrated model
 
-    Returns:
-        Tuple[pd.DataFrame, float]:
-            - df: DataFrame containing evaluation metrics across thresholds.
-            - best_threshold: Selected threshold satisfying the recall constraint.
+    The model must implement `predict_proba`.
 
-    Raises:
-        ValueError:
-            If `min_recall` is not between 0 and 1.
+    Parameters
+    ----------
+    model : Union[ClassifierMixin, VennAbersCalibrator]
+        A fitted classification model or calibrated model that supports
+        probability prediction via `predict_proba`.
+
+    X_calib : Union[pd.DataFrame, np.ndarray]
+        Feature matrix used for threshold evaluation.
+
+    y_calib : Union[pd.Series, np.ndarray]
+        True labels corresponding to `X_calib`.
+
+    min_recall : float
+        Minimum recall constraint for selecting the optimal threshold.
+        Must be between 0 and 1 (inclusive).
+
+    Returns
+    -------
+    Tuple[pd.DataFrame, float]
+        A tuple containing:
+        - DataFrame with evaluation metrics for each threshold
+        - Selected optimal threshold satisfying the recall constraint
+
+    Raises
+    ------
+    ValueError
+        If `min_recall` is not between 0 and 1.
+
+    ValueError
+        If threshold evaluation returns an empty DataFrame.
+
+    Notes
+    -----
+    - The function assumes the model is already fitted.
+    - For calibrated models (e.g., Venn-Abers), threshold tuning should
+      typically be performed after calibration.
     """
-
     if not (0.0 <= min_recall <= 1.0):
         raise ValueError("min_recall must be between 0 and 1")
 
-    df = _evaluate_thresholds(model, X_valid, y_valid)
+    df = _evaluate_thresholds(model, X_calib, y_calib)
 
     if df.empty:
         raise ValueError("Threshold evaluation returned an empty DataFrame")
@@ -206,21 +266,25 @@ def plot_threshold_metrics(
     """
     Generate a publication-quality plot of classification metrics across thresholds.
 
-    Args:
-        df (pd.DataFrame):
-            DataFrame containing threshold evaluation results. Must include
-            a 'threshold' column and metric columns (e.g., 'precision',
-            'recall', 'f1', 'accuracy').
-        title (Optional[str], optional):
-            Title of the plot. Defaults to "Threshold Tuning Metrics".
+    Parameters
+    ----------
+    df : pd.DataFrame
+    DataFrame containing threshold evaluation results. Must include
+    a 'threshold' column and metric columns (e.g., 'precision',
+    'recall', 'f1', 'accuracy').
+    
+    title : Optional[str]
+    Title of the plot. Defaults to "Threshold Tuning Metrics".
 
-    Returns:
-        Figure:
-            A Matplotlib Figure object ready for saving via Kedro catalog.
+    Returns
+    -------
+    matplotlib.figure.Figure
+        A Matplotlib Figure object ready for saving via Kedro catalog.
 
-    Raises:
-        ValueError:
-            If required columns are missing or DataFrame is empty.
+    Raises
+    ------
+    ValueError
+        If required columns are missing or DataFrame is empty.
     """
 
     if df.empty:

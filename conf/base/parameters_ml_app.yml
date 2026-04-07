@@ -8,4 +8,9 @@ optuna_options:
   n_trials: 50
   random_state: 1070
 
+prefit_calib_options:
+  cv: "prefit"
+  inductive: False
+  random_state: 1071
+
 min_recall: 0.80

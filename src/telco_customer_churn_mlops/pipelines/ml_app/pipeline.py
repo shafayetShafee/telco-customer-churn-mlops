@@ -8,6 +8,10 @@ from .nodes_ml.split_data import (
     train_calib_test_split_data
 )
 from .nodes_ml.hyperparameter_tuning import tune_xgb_pr_auc
+from .nodes_ml.calibration import (
+    calibrate_fitted_classifer,
+    plot_calibration_comparison
+)
 from .nodes_ml.threshold_tuning import (
     tune_threshold,
     plot_threshold_metrics
@@ -50,9 +54,20 @@ def create_pipeline(**kwargs) -> Pipeline:
                 tags=["training"]
             ),
             Node(
-                func=tune_threshold,
+                func=calibrate_fitted_classifer,
                 inputs=[
                     "optuna_best_model",
+                    "X_calib", "y_calib",
+                    "params:prefit_calib_options"
+                ],
+                outputs="calibrated_model",
+                name="calibrated_fitted_classifier_node",
+                tags=["training"]
+            ),
+            Node(
+                func=tune_threshold,
+                inputs=[
+                    "calibrated_model",
                     "X_calib", "y_calib",
                     "params:min_recall"
                 ],
@@ -71,6 +86,17 @@ def create_pipeline(**kwargs) -> Pipeline:
                 ],
                 outputs="threshold_metrics_plot",
                 name="plot_threshold_metrics_node",
+                tags=["training"]
+            ),
+            Node(
+                func=plot_calibration_comparison,
+                inputs=[
+                    "optuna_best_model",
+                    "calibrated_model",
+                    "X_calib", "y_calib"
+                ],
+                outputs="calibration_reliability_plot",
+                name="plot_calibration_diagram_node",
                 tags=["training"]
             ),
             Node(

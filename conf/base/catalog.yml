@@ -51,6 +51,10 @@ optuna_best_model:
   type: pickle.PickleDataset
   filepath: data/06_models/optuna_best_model.pkl
 
+calibrated_model:
+  type: pickle.PickleDataset
+  filepath: data/06_models/calibrated_model.pkl
+
 tuning_threshold_df:
   type: pandas.ParquetDataset
   filepath: data/06_models/tuning_threshold_df.parquet
@@ -62,6 +66,14 @@ best_threshold:
 threshold_metrics_plot:
   type: matplotlib.MatplotlibDataset
   filepath: data/08_reporting/threshold_metrics_plot.png
+  save_args:
+    format: png
+    dpi: 300
+    bbox_inches: tight
+
+calibration_reliability_plot:
+  type: matplotlib.MatplotlibDataset
+  filepath: data/08_reporting/calibration_reliability_plot.png
   save_args:
     format: png
     dpi: 300
