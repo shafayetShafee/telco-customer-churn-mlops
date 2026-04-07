@@ -6,62 +6,107 @@
 telco:
   type: pandas.CSVDataset
   filepath: data/01_raw/telco.csv
+  metadata:
+    kedro-viz:
+      layer: raw
 
 processed_target_col:
   type: pickle.PickleDataset
   filepath: data/03_primary/processed_target_col.pkl
+  metadata:
+    kedro-viz:
+      layer: primary
 
 processed_features_data:
   type: pandas.ParquetDataset
   filepath: data/03_primary/processed_features_data.parquet
+  metadata:
+    kedro-viz:
+      layer: primary
 
 X_train:
   type: pandas.ParquetDataset
   filepath: data/05_model_input/X_train.parquet
+  metadata:
+    kedro-viz:
+      layer: model_input
 
 X_calib:
   type: pandas.ParquetDataset
   filepath: data/05_model_input/X_calib.parquet
+  metadata:
+    kedro-viz:
+      layer: model_input
 
 X_test:
   type: pandas.ParquetDataset
   filepath: data/05_model_input/X_test.parquet
+  metadata:
+    kedro-viz:
+      layer: model_input
 
 y_train:
   type: pickle.PickleDataset
   filepath: data/05_model_input/y_train.pkl
+  metadata:
+    kedro-viz:
+      layer: model_input
 
 y_calib:
   type: pickle.PickleDataset
   filepath: data/05_model_input/y_calib.pkl
+  metadata:
+    kedro-viz:
+      layer: model_input
 
 y_test:
   type: pickle.PickleDataset
   filepath: data/05_model_input/y_test.pkl
+  metadata:
+    kedro-viz:
+      layer: model_input
 
 optuna_best_params:
   type: pickle.PickleDataset
   filepath: data/06_models/optuna_best_params.pkl
+  metadata:
+    kedro-viz:
+      layer: models
 
 optuna_search:
   type: pickle.PickleDataset
   filepath: data/06_models/optuna_search.pkl
+  metadata:
+    kedro-viz:
+      layer: models
 
 optuna_best_model:
   type: pickle.PickleDataset
   filepath: data/06_models/optuna_best_model.pkl
+  metadata:
+    kedro-viz:
+      layer: models
 
 calibrated_model:
   type: pickle.PickleDataset
   filepath: data/06_models/calibrated_model.pkl
+  metadata:
+    kedro-viz:
+      layer: models
 
 tuning_threshold_df:
   type: pandas.ParquetDataset
   filepath: data/06_models/tuning_threshold_df.parquet
+  metadata:
+    kedro-viz:
+      layer: models
 
 best_threshold:
   type: pickle.PickleDataset
   filepath: data/06_models/best_threshold.pkl
+  metadata:
+    kedro-viz:
+      layer: models
 
 threshold_metrics_plot:
   type: matplotlib.MatplotlibDataset
@@ -70,6 +115,9 @@ threshold_metrics_plot:
     format: png
     dpi: 300
     bbox_inches: tight
+  metadata:
+    kedro-viz:
+      layer: model_evaluation
 
 calibration_reliability_plot:
   type: matplotlib.MatplotlibDataset
@@ -78,11 +126,20 @@ calibration_reliability_plot:
     format: png
     dpi: 300
     bbox_inches: tight
-
-xgb_model:
-  type: pickle.PickleDataset
-  filepath: data/06_models/xgb_model.pkl
+  metadata:
+    kedro-viz:
+      layer: model_evaluation
 
 classification_report_df:
   type: pandas.ParquetDataset
   filepath: data/08_reporting/classification_report_df.parquet
+  metadata:
+    kedro-viz:
+      layer: model_evaluation
+
+calibrated_final_xgb_model:
+  type: pickle.PickleDataset
+  filepath: data/06_models/calibrated_final_xgb_model.pkl
+  metadata:
+    kedro-viz:
+      layer: final_model

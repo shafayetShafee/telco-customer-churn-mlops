@@ -11,6 +11,10 @@ optuna_options:
 prefit_calib_options:
   cv: "prefit"
   inductive: False
-  random_state: 1071
+  random_state: 1070
 
 min_recall: 0.80
+
+cvap_calib_options:
+  n_splits: 5
+  random_state: 1070
