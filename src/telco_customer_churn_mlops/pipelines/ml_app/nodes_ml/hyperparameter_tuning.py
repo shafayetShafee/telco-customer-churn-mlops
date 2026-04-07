@@ -1,11 +1,10 @@
 from typing import Any
 
-import optuna
 import pandas as pd
-from sklearn.metrics import make_scorer, average_precision_score
-from xgboost import XGBClassifier
+from optuna.distributions import FloatDistribution, IntDistribution
 from optuna_integration import OptunaSearchCV
-from optuna.distributions import IntDistribution, FloatDistribution
+from sklearn.metrics import average_precision_score, make_scorer
+from xgboost import XGBClassifier
 
 
 def tune_xgb_pr_auc(
@@ -55,7 +54,7 @@ def tune_xgb_pr_auc(
     )
 
     pr_auc_scorer = make_scorer(
-        average_precision_score, 
+        average_precision_score,
         response_method="predict_proba"
     )
 

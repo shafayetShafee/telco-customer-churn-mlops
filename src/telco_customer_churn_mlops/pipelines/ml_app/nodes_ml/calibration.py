@@ -1,12 +1,12 @@
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
+from mapie.calibration import VennAbersCalibrator
 from matplotlib.figure import Figure
-
 from sklearn.base import ClassifierMixin
 from sklearn.calibration import CalibrationDisplay
 from sklearn.utils.validation import check_X_y
-from mapie.calibration import VennAbersCalibrator
+
 from .utils import _ensure_fitted
 
 
@@ -63,14 +63,14 @@ def calibrate_fitted_classifer(
     #         "The model appears to be unfitted. Call `fit()` before using this function."
     #     ) from e
     _ensure_fitted(model)
-    
+
     X_validated, y_validated = check_X_y(
         X=X_calib,
         y=y_calib,
         ensure_all_finite='allow-nan',
         accept_sparse=True
     )
-    
+
     va_calibrator = VennAbersCalibrator(
         estimator=model,
         cv=cv,
@@ -82,7 +82,7 @@ def calibrate_fitted_classifer(
     return va_calibrator
 
 
-        
+
 def plot_calibration_comparison(
     uncalibrated_model: ClassifierMixin,
     calibrated_model: VennAbersCalibrator,
@@ -134,10 +134,10 @@ def plot_calibration_comparison(
     - This function is suitable for use inside a Kedro pipeline node.
       The returned figure can be saved using a MatplotlibDataset.
     """
-    
+
     _ensure_fitted(uncalibrated_model)
     _ensure_fitted(calibrated_model)
-    
+
     if not hasattr(uncalibrated_model, "predict_proba"):
         raise ValueError("Uncalibrated model must support `predict_proba`.")
 

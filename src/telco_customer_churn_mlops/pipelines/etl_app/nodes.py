@@ -9,7 +9,7 @@ import unicodedata
 import pandas as pd
 
 
-def _clean_names(
+def _clean_names( # noqa: PLR0913
     df: pd.DataFrame,
     case: str = "snake",
     remove_special: bool = True,

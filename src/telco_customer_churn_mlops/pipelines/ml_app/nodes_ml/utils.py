@@ -1,8 +1,8 @@
-from typing import Union
-from sklearn.base import ClassifierMixin
-from sklearn.utils.validation import check_is_fitted
-from sklearn.exceptions import NotFittedError
 from mapie.calibration import VennAbersCalibrator
+from sklearn.base import ClassifierMixin
+from sklearn.exceptions import NotFittedError
+from sklearn.utils.validation import check_is_fitted
+
 
 def _ensure_fitted(model: ClassifierMixin | VennAbersCalibrator) -> None:
     """

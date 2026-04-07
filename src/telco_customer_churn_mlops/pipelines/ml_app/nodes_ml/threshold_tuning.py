@@ -4,6 +4,10 @@ from typing import Any
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+
+# from sklearn.utils.validation import check_is_fitted
+# from sklearn.exceptions import NotFittedError
+from mapie.calibration import VennAbersCalibrator
 from matplotlib.figure import Figure
 from sklearn.base import ClassifierMixin
 from sklearn.metrics import (
@@ -13,9 +17,7 @@ from sklearn.metrics import (
     precision_score,
     recall_score,
 )
-# from sklearn.utils.validation import check_is_fitted
-# from sklearn.exceptions import NotFittedError
-from mapie.calibration import VennAbersCalibrator
+
 from .utils import _ensure_fitted
 
 
@@ -161,7 +163,7 @@ def _select_threshold_by_recall(
     Must include at least the columns:
     - 'threshold': threshold values
     - 'recall': recall scores corresponding to each threshold
-    
+
     min_recall : float
     Minimum recall value required for threshold selection.
 
@@ -272,7 +274,7 @@ def plot_threshold_metrics(
     DataFrame containing threshold evaluation results. Must include
     a 'threshold' column and metric columns (e.g., 'precision',
     'recall', 'f1', 'accuracy').
-    
+
     title : Optional[str]
     Title of the plot. Defaults to "Threshold Tuning Metrics".
 

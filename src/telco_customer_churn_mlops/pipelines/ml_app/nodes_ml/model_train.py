@@ -2,11 +2,10 @@ import logging
 
 import numpy as np
 import pandas as pd
+from mapie.calibration import VennAbersCalibrator
 from sklearn.base import ClassifierMixin
 from sklearn.metrics import classification_report
 from sklearn.utils.validation import check_X_y
-from mapie.calibration import VennAbersCalibrator
-
 from xgboost import XGBClassifier
 
 from .utils import _ensure_fitted
@@ -52,7 +51,7 @@ def fit_calibrated_final_model(
     """
     if X is None or y is None:
         raise ValueError("X and y must not be None")
-    
+
     n_splits = calib_options.get("n_splits", 5)
     random_state = calib_options.get("random_state", 1071)
 
@@ -85,21 +84,21 @@ def evaluate_model(
     """
     Evaluate a fitted classification model using a custom decision threshold.
 
-    This function validates the model, generates probability predictions, 
-    applies a custom threshold, computes a classification report, logs it, 
+    This function validates the model, generates probability predictions,
+    applies a custom threshold, computes a classification report, logs it,
     and returns it as a DataFrame.
 
     Parameters
     ----------
     model : ClassifierMixin | VennAbersCalibrator
         A fitted classification or calibrated model supporting `predict_proba`.
-    
+
     X_test : pd.DataFrame or np.ndarray
         Test features.
-    
+
     y_test : pd.Series or np.ndarray
         True labels for the test data.
-    
+
     threshold : float
         Decision threshold for converting probabilities into class predictions.
         Must be between 0 and 1.
@@ -114,11 +113,11 @@ def evaluate_model(
         - f1-score
         - support
         - accuracy / macro avg / weighted avg (from scikit-learn)
-    
+
     Raises
     ------
     ValueError
-        If `threshold` is not between 0 and 1, or if `X_test` or `y_test` is None, 
+        If `threshold` is not between 0 and 1, or if `X_test` or `y_test` is None,
         or if the model is not fitted.
     """
     if not (0.0 <= threshold <= 1.0):
