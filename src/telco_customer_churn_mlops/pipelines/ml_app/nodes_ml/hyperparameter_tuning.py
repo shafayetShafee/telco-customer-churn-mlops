@@ -6,6 +6,8 @@ from optuna_integration import OptunaSearchCV
 from sklearn.metrics import average_precision_score, make_scorer
 from xgboost import XGBClassifier
 
+import mlflow
+
 
 def tune_xgb_pr_auc(
     X_train: pd.DataFrame,
@@ -33,6 +35,7 @@ def tune_xgb_pr_auc(
     pos_count = (y_train == 1).sum()
     neg_count = (y_train == 0).sum()
     scale_pos_weight = neg_count / pos_count if pos_count > 0 else 1
+    mlflow.log_param("scale_pos_weight", scale_pos_weight)
 
     param_distributions = {
         "n_estimators": IntDistribution(300, 800, step=100),
@@ -73,4 +76,13 @@ def tune_xgb_pr_auc(
     best_model = optuna_search.best_estimator_
     best_params = optuna_search.best_params_
 
+    mlflow.log_params(_sanitize(best_params))
+
     return best_model, best_params, optuna_search
+
+
+def _sanitize(params: dict) -> dict:
+    return {
+        k: (v.item() if hasattr(v, "item") else v)
+        for k, v in params.items()
+    }

@@ -25,43 +25,48 @@ processed_features_data:
       layer: primary
 
 X_train:
-  type: pandas.ParquetDataset
-  filepath: data/05_model_input/X_train.parquet
+  type: kedro.io.MemoryDataset
+  # filepath: data/05_model_input/X_train.parquet
   metadata:
     kedro-viz:
       layer: model_input
 
 X_calib:
-  type: pandas.ParquetDataset
-  filepath: data/05_model_input/X_calib.parquet
+  # type: pandas.ParquetDataset
+  type: kedro.io.MemoryDataset
+  # filepath: data/05_model_input/X_calib.parquet
   metadata:
     kedro-viz:
       layer: model_input
 
 X_test:
-  type: pandas.ParquetDataset
-  filepath: data/05_model_input/X_test.parquet
+  # type: pandas.ParquetDataset
+  type: kedro.io.MemoryDataset
+  # filepath: data/05_model_input/X_test.parquet
   metadata:
     kedro-viz:
       layer: model_input
 
 y_train:
-  type: pickle.PickleDataset
-  filepath: data/05_model_input/y_train.pkl
+  # type: pickle.PickleDataset
+  type: kedro.io.MemoryDataset
+  # filepath: data/05_model_input/y_train.pkl
   metadata:
     kedro-viz:
       layer: model_input
 
 y_calib:
-  type: pickle.PickleDataset
-  filepath: data/05_model_input/y_calib.pkl
+  # type: pickle.PickleDataset
+  type: kedro.io.MemoryDataset
+  # filepath: data/05_model_input/y_calib.pkl
   metadata:
     kedro-viz:
       layer: model_input
 
 y_test:
-  type: pickle.PickleDataset
-  filepath: data/05_model_input/y_test.pkl
+  # type: pickle.PickleDataset
+  type: kedro.io.MemoryDataset
+  # filepath: data/05_model_input/y_test.pkl
   metadata:
     kedro-viz:
       layer: model_input
@@ -95,44 +100,51 @@ calibrated_model:
       layer: models
 
 tuning_threshold_df:
-  type: pandas.ParquetDataset
-  filepath: data/06_models/tuning_threshold_df.parquet
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataset
+  dataset:
+    type: pandas.CSVDataset
+    filepath: data/06_models/tuning_threshold_df.csv
   metadata:
     kedro-viz:
       layer: models
 
 best_threshold:
-  type: pickle.PickleDataset
-  filepath: data/06_models/best_threshold.pkl
+  type: kedro_mlflow.io.metrics.MlflowMetricDataset
   metadata:
     kedro-viz:
       layer: models
 
 threshold_metrics_plot:
-  type: matplotlib.MatplotlibDataset
-  filepath: data/08_reporting/threshold_metrics_plot.png
-  save_args:
-    format: png
-    dpi: 300
-    bbox_inches: tight
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataset
+  dataset:
+    type: matplotlib.MatplotlibDataset
+    filepath: data/08_reporting/threshold_metrics_plot.png
+    save_args:
+      format: png
+      dpi: 300
+      bbox_inches: tight
   metadata:
     kedro-viz:
       layer: model_evaluation
 
 calibration_reliability_plot:
-  type: matplotlib.MatplotlibDataset
-  filepath: data/08_reporting/calibration_reliability_plot.png
-  save_args:
-    format: png
-    dpi: 300
-    bbox_inches: tight
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataset
+  dataset:
+    type: matplotlib.MatplotlibDataset
+    filepath: data/08_reporting/calibration_reliability_plot.png
+    save_args:
+      format: png
+      dpi: 300
+      bbox_inches: tight
   metadata:
     kedro-viz:
       layer: model_evaluation
 
 classification_report_df:
-  type: pandas.ParquetDataset
-  filepath: data/08_reporting/classification_report_df.parquet
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataset
+  dataset: 
+    type: pandas.CSVDataset
+    filepath: data/08_reporting/classification_report_df.csv
   metadata:
     kedro-viz:
       layer: model_evaluation
