@@ -20,6 +20,8 @@ from sklearn.metrics import (
 
 from .utils import _ensure_fitted
 
+import mlflow
+
 
 def _evaluate_thresholds(
     model: ClassifierMixin | VennAbersCalibrator,
@@ -256,6 +258,8 @@ def tune_threshold(
 
     best_threshold = _select_threshold_by_recall(df, min_recall)
 
+    mlflow.log_metric("best_threshold", best_threshold)
+    
     return df, best_threshold
 
 

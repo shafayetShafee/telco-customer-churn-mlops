@@ -1,6 +1,5 @@
 """
-This is a boilerplate pipeline 'ml_app'
-generated using Kedro 1.2.0
+Kedro ML app pipeline
 """
 
 from kedro.pipeline import Node, Pipeline  # noqa
@@ -21,9 +20,13 @@ from .nodes_ml.model_train import (
     evaluate_model
 )
 
+from .nodes_ml.predict import (
+    infer_from_model,
+    decode_predictions
+)
 
-def create_pipeline(**kwargs) -> Pipeline:
-    return Pipeline(
+def create_ml_pipeline(**kwargs) -> Pipeline:
+    training_pipeline = Pipeline(
         [
             Node(
                 func=train_calib_test_split_data,
@@ -123,4 +126,33 @@ def create_pipeline(**kwargs) -> Pipeline:
                 tags=["training"]
             )
         ]
+    )
+
+    inference_pipeline = Pipeline(
+        [
+            Node(
+                func=infer_from_model,
+                inputs=[
+                    "calibrated_final_xgb_model",
+                    "processed_features_data"
+                ],
+                outputs="predicted_probs",
+                name="infer_from_model_node",
+                tags=["inference"] 
+            ),
+            Node(
+                func=decode_predictions,
+                inputs=[
+                    "predicted_probs", 
+                    "best_threshold"
+                ],
+                outputs="final_preds",
+                tags=["inference"]
+            )
+        ]
+    )
+
+    return (
+        training_pipeline 
+        +  inference_pipeline 
     )

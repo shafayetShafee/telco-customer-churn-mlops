@@ -9,7 +9,7 @@ resolution-markers = [
 ]
 
 [options]
-exclude-newer = "2026-04-04T19:20:13.384103Z"
+exclude-newer = "2026-04-12T20:18:41.332811Z"
 exclude-newer-span = "P1W"
 
 [[package]]
@@ -1704,7 +1704,7 @@ wheels = [
 
 [[package]]
 name = "kedro"
-version = "1.2.0"
+version = "1.1.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "attrs" },
@@ -1726,9 +1726,9 @@ dependencies = [
     { name = "tomli-w" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/a1/70/41c1b8a31a06d0b28a7d7991594b19a797f0e639f79a98a5c602bb84fe65/kedro-1.2.0.tar.gz", hash = "sha256:822cbc132bd654a33ce9b467ba76160f71df80e546dbc0e3b6821e476aab4b28", size = 164230, upload-time = "2026-01-29T14:25:59.689Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/cb/f9/947a79a583f9866833da6caf530a251ec812ae2509d54a7871968e2e81f5/kedro-1.1.1.tar.gz", hash = "sha256:1510b721539afe58351cf81a0ce5a34957310d0f6811f0d340993d97f2147484", size = 155835, upload-time = "2025-11-26T14:53:56.588Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7a/46/69266d69ee410d7e088772425a8cfbc28f0d7a7ca9fe9ae6cf9a5fe3b4d2/kedro-1.2.0-py3-none-any.whl", hash = "sha256:2dcc59ec430af8ecee8e085aa33a3c6064ea4afd782fa53152bb8450f5024306", size = 191784, upload-time = "2026-01-29T14:25:58.301Z" },
+    { url = "https://files.pythonhosted.org/packages/b6/72/5f94d37c65b3a418a1b8ec5305981c0ce1befa29d4dc180499d190c3f6aa/kedro-1.1.1-py3-none-any.whl", hash = "sha256:ae540d77188d3ba8bcc040f95ef9f32ca4192be3702c77706ec6d7858203f01e", size = 183164, upload-time = "2025-11-26T14:53:54.962Z" },
 ]
 
 [[package]]
@@ -4227,7 +4227,7 @@ dev = [
 requires-dist = [
     { name = "ipython", specifier = ">=8.10" },
     { name = "jupyterlab", specifier = ">=3.0" },
-    { name = "kedro", specifier = "~=1.2.0" },
+    { name = "kedro", specifier = "~=1.1.0" },
     { name = "kedro-datasets", extras = ["pandas-csvdataset", "pandas-parquetdataset"] },
     { name = "kedro-mlflow", specifier = "~=2.0.2" },
     { name = "kedro-viz", specifier = "~=12.3.0" },

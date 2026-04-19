@@ -2,11 +2,20 @@
 from the Kedro defaults. For further information, including these default values, see
 https://docs.kedro.org/en/stable/configure/configuration_basics/#configuration"""
 
+# from kedro.framework.hooks import hook_impl
+
+# class DebugHook:
+#     @hook_impl
+#     def after_pipeline_run(self, pipeline, **kwargs):
+#         print(f"HOOK FIRED - pipeline type: {type(pipeline)}")
+#         from kedro_mlflow.pipeline.pipeline_ml import PipelineML
+#         print(f"Is PipelineML: {isinstance(pipeline, PipelineML)}")
+
 # Instantiated project hooks.
 # For example, after creating a hooks.py and defining a ProjectHooks class there, do
 # from telco_customer_churn_mlops.hooks import ProjectHooks
 # Hooks are executed in a Last-In-First-Out (LIFO) order.
-# HOOKS = (ProjectHooks(),)
+# HOOKS = (DebugHook(),)
 
 # Installed plugins for which to disable hook auto-registration.
 # DISABLE_HOOKS_FOR_PLUGINS = ("kedro-viz",)

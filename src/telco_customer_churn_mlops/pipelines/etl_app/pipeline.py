@@ -10,7 +10,7 @@ from .nodes import (
 )
 
 
-def create_pipeline(**kwargs) -> Pipeline:
+def create_etl_pipeline(**kwargs) -> Pipeline:
     return Pipeline(
         [
             Node(

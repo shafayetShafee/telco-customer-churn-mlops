@@ -10,6 +10,13 @@ telco:
     kedro-viz:
       layer: raw
 
+telco_future: 
+  type: pandas.CSVDataset
+  filepath: data/01_raw/future_telco.csv
+  metadata:
+    kedro-viz:
+      layer: raw
+
 processed_target_col:
   type: pickle.PickleDataset
   filepath: data/03_primary/processed_target_col.pkl
@@ -109,7 +116,8 @@ tuning_threshold_df:
       layer: models
 
 best_threshold:
-  type: kedro_mlflow.io.metrics.MlflowMetricDataset
+  type: pickle.PickleDataset
+  filepath: data/06_models/best_threshold.pkl
   metadata:
     kedro-viz:
       layer: models
@@ -155,3 +163,11 @@ calibrated_final_xgb_model:
   metadata:
     kedro-viz:
       layer: final_model
+
+
+pipeline_inference_model:
+  type: kedro_mlflow.io.models.MlflowModelTrackingDataset
+  flavor: mlflow.pyfunc
+  pyfunc_workflow: python_model
+  load_args:
+    model_uri: "runs:/f5214bbd2b854d4d8157ed060ddb8dd2/telco_customer_churn_mlops"
