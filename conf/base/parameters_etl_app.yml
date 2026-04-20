@@ -21,4 +21,6 @@ features:
   - MonthlyCharges
   - TotalCharges
 
-
+multi_cat_features:
+  - Contract
+  - PaymentMethod

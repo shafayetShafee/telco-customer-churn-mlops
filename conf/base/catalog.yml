@@ -17,6 +17,27 @@ telco_future:
     kedro-viz:
       layer: raw
 
+cleaned_features_data:
+  type: pandas.ParquetDataset
+  filepath: data/02_intermediate/cleaned_features_data.parquet
+  metadata:
+    kedro-viz:
+      layer: intermediate
+
+multi_cat_encoder:
+  type: pickle.PickleDataset
+  filepath: data/02_intermediate/multi_cat_encoder.pkl
+  metadata:
+    kedro-viz:
+      layer: intermediate
+
+multi_cat_encoded_df:
+  type: pandas.ParquetDataset
+  filepath: data/02_intermediate/multi_cat_encoded_df.parquet
+  metadata:
+    kedro-viz:
+      layer: intermediate
+
 processed_target_col:
   type: pickle.PickleDataset
   filepath: data/03_primary/processed_target_col.pkl
@@ -170,4 +191,4 @@ pipeline_inference_model:
   flavor: mlflow.pyfunc
   pyfunc_workflow: python_model
   load_args:
-    model_uri: "runs:/f5214bbd2b854d4d8157ed060ddb8dd2/telco_customer_churn_mlops"
+    model_uri: "runs:/827f79ef44974b93a746a8e676392124/final_churn_model"

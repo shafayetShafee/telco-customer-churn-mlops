@@ -7,6 +7,7 @@ import re
 import unicodedata
 
 import pandas as pd
+from sklearn.preprocessing import OneHotEncoder
 
 
 def _clean_names( # noqa: PLR0913
@@ -147,7 +148,7 @@ def extract_preprocess_features_data(
         'gender', 'Partner', 'Dependents',
         'PhoneService', 'PaperlessBilling'
     ]
-    multi_cat_cols = ['Contract', 'PaymentMethod']
+    # multi_cat_cols = ['Contract', 'PaymentMethod']
     internet_service_cols = [
         'OnlineSecurity', 'OnlineBackup', 'DeviceProtection',
         'TechSupport', 'StreamingTV', 'StreamingMovies'
@@ -183,8 +184,37 @@ def extract_preprocess_features_data(
                 c: df_[c].astype('int8') for c in df_.select_dtypes('bool').columns
             })
         )
-        .pipe(lambda df_: pd.get_dummies(df_, columns=multi_cat_cols, drop_first=True, dtype='int8'))
-        .pipe(_clean_names)
+        # .pipe(lambda df_: pd.get_dummies(df_, columns=multi_cat_cols, drop_first=True, dtype='int8'))
+        # .pipe(_clean_names)
     )
 
     return pre_proc_df
+
+
+def fit_multi_cat_encoder(
+    df: pd.DataFrame, 
+    multi_cat_cols: list[str]
+) -> OneHotEncoder:
+    enc = OneHotEncoder(
+        drop='first', 
+        dtype='int8', 
+        handle_unknown='ignore', 
+        sparse_output=False
+    )
+    enc.fit(df[multi_cat_cols])
+    return enc 
+
+
+def apply_multi_cat_encoder(
+    df: pd.DataFrame, 
+    encoder: OneHotEncoder, 
+    multi_cat_cols: list[str]
+) -> pd.DataFrame:
+    encoded = encoder.transform(df[multi_cat_cols])
+    cols = encoder.get_feature_names_out(multi_cat_cols)
+    encoded_df = pd.DataFrame(encoded, columns=cols, index=df.index)
+    return df.drop(columns=multi_cat_cols).join(encoded_df)
+
+
+def clean_names(df: pd.DataFrame) -> pd.DataFrame:
+    return df.pipe(_clean_names)

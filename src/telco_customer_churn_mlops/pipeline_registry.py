@@ -33,7 +33,9 @@ def register_pipelines() -> dict[str, Pipeline]:
         inference=inference_pipeline,
         input_name='telco',
         log_model_kwargs=dict(
-            artifact_path="telco_customer_churn_mlops"
+            name="final_churn_model",
+            signature=None,
+            registered_model_name="production_churn_model"
         )
     )
 
