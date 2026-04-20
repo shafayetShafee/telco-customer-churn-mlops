@@ -10,7 +10,7 @@ import pandas as pd
 from sklearn.preprocessing import OneHotEncoder
 
 
-def _clean_names( # noqa: PLR0913
+def clean_names(  # noqa: PLR0913
     df: pd.DataFrame,
     case: str = "snake",
     remove_special: bool = True,
@@ -39,7 +39,8 @@ def _clean_names( # noqa: PLR0913
 
         if strip_accents:
             col = "".join(
-                c for c in unicodedata.normalize("NFD", col)
+                c
+                for c in unicodedata.normalize("NFD", col)
                 if not unicodedata.combining(c)
             )
 
@@ -82,10 +83,7 @@ def _clean_names( # noqa: PLR0913
     return df.rename(columns=_clean)
 
 
-def extract_encode_target_col(
-    df: pd.DataFrame,
-    target_col: str
-) -> pd.Series:
+def extract_encode_target_col(df: pd.DataFrame, target_col: str) -> pd.Series:
     """
     Extract and encode a binary target column from a DataFrame.
 
@@ -103,18 +101,13 @@ def extract_encode_target_col(
         pd.Series:
             Encoded target column as numeric values (1 and 0).
     """
-    y_enc = (
-        df[target_col]
-        .map({'Yes': 1, 'No': 0})
-        .rename(target_col.lower())
-    )
+    y_enc = df[target_col].map({"Yes": 1, "No": 0}).rename(target_col.lower())
 
     return y_enc
 
 
 def extract_preprocess_features_data(
-    df: pd.DataFrame,
-    features: list[str]
+    df: pd.DataFrame, features: list[str]
 ) -> pd.DataFrame:
     """
     Extract and preprocess feature columns from a DataFrame.
@@ -145,76 +138,138 @@ def extract_preprocess_features_data(
     feat_df = df[features]
 
     binary_cols = [
-        'gender', 'Partner', 'Dependents',
-        'PhoneService', 'PaperlessBilling'
+        "gender",
+        "Partner",
+        "Dependents",
+        "PhoneService",
+        "PaperlessBilling",
     ]
-    # multi_cat_cols = ['Contract', 'PaymentMethod']
     internet_service_cols = [
-        'OnlineSecurity', 'OnlineBackup', 'DeviceProtection',
-        'TechSupport', 'StreamingTV', 'StreamingMovies'
+        "OnlineSecurity",
+        "OnlineBackup",
+        "DeviceProtection",
+        "TechSupport",
+        "StreamingTV",
+        "StreamingMovies",
     ]
 
     pre_proc_df = (
-        feat_df
-        .pipe(lambda df_: df_.assign(**{
-                c: df_[c].map({'Yes': 1, 'No': 0, 'Male': 1, 'Female': 0}).astype('int8')
-                for c in binary_cols
-            })
+        feat_df.pipe(
+            lambda df_: df_.assign(
+                **{
+                    c: df_[c]
+                    .map({"Yes": 1, "No": 0, "Male": 1, "Female": 0})
+                    .astype("int8")
+                    for c in binary_cols
+                }
+            )
         )
         .assign(
             multiple_lines=lambda df_: (
-                df_['MultipleLines']
-                .replace({'No phone service': 'No'})
-                .map({'Yes': 1, 'No': 0})
-                .astype('int8')
+                df_["MultipleLines"]
+                .replace({"No phone service": "No"})
+                .map({"Yes": 1, "No": 0})
+                .astype("int8")
             ),
-            no_internet_service=lambda df_: (df_['InternetService'] == 'No').astype('int8'),
-            dsl_internet_service=lambda df_: (df_['InternetService'] == 'DSL').astype('int8')
+            no_internet_service=lambda df_: (df_["InternetService"] == "No").astype(
+                "int8"
+            ),
+            dsl_internet_service=lambda df_: (df_["InternetService"] == "DSL").astype(
+                "int8"
+            ),
         )
-        .pipe(lambda df_: df_.assign(**{
-                c: df_[c].replace({'No internet service': 'No'}).map({'Yes': 1, 'No': 0})
-                for c in internet_service_cols
-            })
+        .pipe(
+            lambda df_: df_.assign(
+                **{
+                    c: df_[c]
+                    .replace({"No internet service": "No"})
+                    .map({"Yes": 1, "No": 0})
+                    for c in internet_service_cols
+                }
+            )
         )
         .assign(
-            total_charges = lambda df_: pd.to_numeric(df_['TotalCharges'], errors='coerce')
+            total_charges=lambda df_: pd.to_numeric(
+                df_["TotalCharges"], errors="coerce"
+            )
         )
-        .drop(columns=['MultipleLines', 'InternetService', 'TotalCharges'])
-        .pipe(lambda df_: df_.assign(**{
-                c: df_[c].astype('int8') for c in df_.select_dtypes('bool').columns
-            })
+        .drop(columns=["MultipleLines", "InternetService", "TotalCharges"])
+        .pipe(
+            lambda df_: df_.assign(
+                **{c: df_[c].astype("int8") for c in df_.select_dtypes("bool").columns}
+            )
         )
-        # .pipe(lambda df_: pd.get_dummies(df_, columns=multi_cat_cols, drop_first=True, dtype='int8'))
-        # .pipe(_clean_names)
     )
-
     return pre_proc_df
 
 
-def fit_multi_cat_encoder(
-    df: pd.DataFrame, 
-    multi_cat_cols: list[str]
-) -> OneHotEncoder:
+def fit_multi_cat_encoder(df: pd.DataFrame, multi_cat_cols: list[str]) -> OneHotEncoder:
+    """
+    Fit a OneHotEncoder on multiple categorical columns.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Input dataframe containing categorical features.
+
+    multi_cat_cols : list of str
+        List of column names in `df` to be one-hot encoded.
+
+    Returns
+    -------
+    OneHotEncoder
+        Fitted OneHotEncoder instance configured with:
+        - drop='first' to avoid multicollinearity
+        - dtype='int8' for memory efficiency
+        - handle_unknown='ignore' to safely transform unseen categories
+        - sparse_output=False to return dense arrays
+
+    Notes
+    -----
+    The encoder is fitted only on the specified categorical columns.
+    This function does not modify the input dataframe.
+    """
     enc = OneHotEncoder(
-        drop='first', 
-        dtype='int8', 
-        handle_unknown='ignore', 
-        sparse_output=False
+        drop="first", dtype="int8", handle_unknown="ignore", sparse_output=False
     )
     enc.fit(df[multi_cat_cols])
-    return enc 
+    return enc
 
 
 def apply_multi_cat_encoder(
-    df: pd.DataFrame, 
-    encoder: OneHotEncoder, 
-    multi_cat_cols: list[str]
+    df: pd.DataFrame, encoder: OneHotEncoder, multi_cat_cols: list[str]
 ) -> pd.DataFrame:
+    """
+    Apply a fitted OneHotEncoder to transform categorical columns.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Input dataframe containing categorical features to transform.
+
+    encoder : OneHotEncoder
+        A previously fitted OneHotEncoder instance.
+
+    multi_cat_cols : list of str
+        List of column names in `df` to be one-hot encoded.
+
+    Returns
+    -------
+    pd.DataFrame
+        A new dataframe where:
+        - Original categorical columns are removed
+        - One-hot encoded columns are appended
+        - Index is preserved from the input dataframe
+
+    Notes
+    -----
+    - Unseen categories during transformation are ignored due to
+      `handle_unknown='ignore'`.
+    - Output columns follow the naming convention from
+      `encoder.get_feature_names_out`.
+    - This function does not mutate the input dataframe.
+    """
     encoded = encoder.transform(df[multi_cat_cols])
     cols = encoder.get_feature_names_out(multi_cat_cols)
     encoded_df = pd.DataFrame(encoded, columns=cols, index=df.index)
     return df.drop(columns=multi_cat_cols).join(encoded_df)
-
-
-def clean_names(df: pd.DataFrame) -> pd.DataFrame:
-    return df.pipe(_clean_names)
