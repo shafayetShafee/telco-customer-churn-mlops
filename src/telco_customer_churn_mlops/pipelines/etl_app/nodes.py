@@ -159,7 +159,7 @@ def extract_preprocess_features_data(
                 **{
                     c: df_[c]
                     .map({"Yes": 1, "No": 0, "Male": 1, "Female": 0})
-                    .astype("int8")
+                    .astype("float")
                     for c in binary_cols
                 }
             )
@@ -169,13 +169,13 @@ def extract_preprocess_features_data(
                 df_["MultipleLines"]
                 .replace({"No phone service": "No"})
                 .map({"Yes": 1, "No": 0})
-                .astype("int8")
+                .astype("float")
             ),
             no_internet_service=lambda df_: (df_["InternetService"] == "No").astype(
-                "int8"
+                "float"
             ),
             dsl_internet_service=lambda df_: (df_["InternetService"] == "DSL").astype(
-                "int8"
+                "float"
             ),
         )
         .pipe(
@@ -196,7 +196,7 @@ def extract_preprocess_features_data(
         .drop(columns=["MultipleLines", "InternetService", "TotalCharges"])
         .pipe(
             lambda df_: df_.assign(
-                **{c: df_[c].astype("int8") for c in df_.select_dtypes("bool").columns}
+                **{c: df_[c].astype("float") for c in df_.select_dtypes("bool").columns}
             )
         )
     )
@@ -220,7 +220,7 @@ def fit_multi_cat_encoder(df: pd.DataFrame, multi_cat_cols: list[str]) -> OneHot
     OneHotEncoder
         Fitted OneHotEncoder instance configured with:
         - drop='first' to avoid multicollinearity
-        - dtype='int8' for memory efficiency
+        - dtype='float'
         - handle_unknown='ignore' to safely transform unseen categories
         - sparse_output=False to return dense arrays
 
@@ -230,7 +230,7 @@ def fit_multi_cat_encoder(df: pd.DataFrame, multi_cat_cols: list[str]) -> OneHot
     This function does not modify the input dataframe.
     """
     enc = OneHotEncoder(
-        drop="first", dtype="int8", handle_unknown="ignore", sparse_output=False
+        drop="first", dtype="float", handle_unknown="ignore", sparse_output=False
     )
     enc.fit(df[multi_cat_cols])
     return enc
