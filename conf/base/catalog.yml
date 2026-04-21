@@ -92,48 +92,49 @@ processed_target_col:
 #       layer: primary
 
 X_train:
-  type: kedro.io.MemoryDataset
-  # filepath: data/05_model_input/X_train.parquet
+  # type: kedro.io.MemoryDataset
+  type: pandas.ParquetDataset
+  filepath: data/05_model_input/X_train.parquet
   metadata:
     kedro-viz:
       layer: model_input
 
 X_calib:
-  # type: pandas.ParquetDataset
-  type: kedro.io.MemoryDataset
-  # filepath: data/05_model_input/X_calib.parquet
+  type: pandas.ParquetDataset
+  # type: kedro.io.MemoryDataset
+  filepath: data/05_model_input/X_calib.parquet
   metadata:
     kedro-viz:
       layer: model_input
 
 X_test:
-  # type: pandas.ParquetDataset
-  type: kedro.io.MemoryDataset
-  # filepath: data/05_model_input/X_test.parquet
+  type: pandas.ParquetDataset
+  # type: kedro.io.MemoryDataset
+  filepath: data/05_model_input/X_test.parquet
   metadata:
     kedro-viz:
       layer: model_input
 
 y_train:
-  # type: pickle.PickleDataset
-  type: kedro.io.MemoryDataset
-  # filepath: data/05_model_input/y_train.pkl
+  type: pickle.PickleDataset
+  # type: kedro.io.MemoryDataset
+  filepath: data/05_model_input/y_train.pkl
   metadata:
     kedro-viz:
       layer: model_input
 
 y_calib:
-  # type: pickle.PickleDataset
-  type: kedro.io.MemoryDataset
-  # filepath: data/05_model_input/y_calib.pkl
+  type: pickle.PickleDataset
+  # type: kedro.io.MemoryDataset
+  filepath: data/05_model_input/y_calib.pkl
   metadata:
     kedro-viz:
       layer: model_input
 
 y_test:
-  # type: pickle.PickleDataset
-  type: kedro.io.MemoryDataset
-  # filepath: data/05_model_input/y_test.pkl
+  type: pickle.PickleDataset
+  # type: kedro.io.MemoryDataset
+  filepath: data/05_model_input/y_test.pkl
   metadata:
     kedro-viz:
       layer: model_input
@@ -160,8 +161,12 @@ optuna_best_model:
       layer: models
 
 calibrated_model:
-  type: pickle.PickleDataset
-  filepath: data/06_models/calibrated_model.pkl
+  # type: pickle.PickleDataset
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataset
+  dataset:
+    type: kedro_mlflow.io.models.MlflowModelLocalFileSystemDataset
+    flavor: mlflow.sklearn
+    filepath: data/06_models/calibrated_model.pkl
   metadata:
     kedro-viz:
       layer: models
@@ -217,12 +222,16 @@ classification_report_df:
     kedro-viz:
       layer: model_evaluation
 
-calibrated_final_xgb_model:
-  type: pickle.PickleDataset
-  filepath: data/06_models/calibrated_final_xgb_model.pkl
+calibrated_full_xgb_model:
+  # type: pickle.PickleDataset
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataset
+  dataset:
+    type: kedro_mlflow.io.models.MlflowModelLocalFileSystemDataset
+    flavor: mlflow.sklearn
+    filepath: data/06_models/calibrated_full_xgb_model
   metadata:
     kedro-viz:
-      layer: final_model
+      layer: full_model
 
 
 # pipeline_inference_model:
