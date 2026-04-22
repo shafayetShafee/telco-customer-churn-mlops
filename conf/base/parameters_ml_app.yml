@@ -18,3 +18,11 @@ min_recall: 0.80
 cvap_calib_options:
   n_splits: 5
   random_state: 1070
+
+
+mlflow_evaluate_options:
+  target: "churn"
+  eval_metric: "recall_score"
+  eval_metric_threshold: 0.8
+  min_absolute_change: 0.05
+  min_relative_change: 0.05

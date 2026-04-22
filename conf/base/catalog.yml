@@ -161,12 +161,8 @@ optuna_best_model:
       layer: models
 
 calibrated_model:
-  # type: pickle.PickleDataset
-  type: kedro_mlflow.io.artifacts.MlflowArtifactDataset
-  dataset:
-    type: kedro_mlflow.io.models.MlflowModelLocalFileSystemDataset
-    flavor: mlflow.sklearn
-    filepath: data/06_models/calibrated_model.pkl
+  type: pickle.PickleDataset
+  filepath: data/06_models/calibrated_model.pkl
   metadata:
     kedro-viz:
       layer: models
@@ -223,12 +219,8 @@ classification_report_df:
       layer: model_evaluation
 
 calibrated_full_xgb_model:
-  # type: pickle.PickleDataset
-  type: kedro_mlflow.io.artifacts.MlflowArtifactDataset
-  dataset:
-    type: kedro_mlflow.io.models.MlflowModelLocalFileSystemDataset
-    flavor: mlflow.sklearn
-    filepath: data/06_models/calibrated_full_xgb_model
+  type: pickle.PickleDataset
+  filepath: data/06_models/calibrated_full_xgb_model.pkl
   metadata:
     kedro-viz:
       layer: full_model

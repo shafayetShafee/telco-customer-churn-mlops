@@ -1,8 +1,10 @@
 import logging
 
+import mlflow
 import numpy as np
 import pandas as pd
 from mapie.calibration import VennAbersCalibrator
+from mlflow.models import infer_signature
 from sklearn.base import ClassifierMixin
 from sklearn.metrics import classification_report
 from sklearn.utils.validation import check_X_y
@@ -13,47 +15,131 @@ from .utils import _ensure_fitted
 logger = logging.getLogger(__name__)
 
 
+class ThresholdClassifier(mlflow.pyfunc.PythonModel):
+    """
+    A custom MLflow PythonModel that wraps a calibrated classifier with a
+    configurable decision threshold.
+
+    By default, probabilistic classifiers use 0.5 as the decision boundary.
+    This wrapper allows overriding that threshold, which is useful when
+    optimising for precision, recall, or F1 on imbalanced datasets.
+
+    The model is compatible with MLflow's pyfunc flavour and can be logged,
+    registered, and served via the MLflow Model Registry.
+
+    Parameters
+    ----------
+    calibrator : VennAbersCalibrator
+        A fitted Venn-Abers calibrated classifier that exposes a
+        `predict_proba(X)` method returning an array of shape
+        (n_samples, n_classes).
+
+    threshold : float
+        Decision threshold in the range [0.0, 1.0]. Samples with predicted
+        positive-class probability >= threshold are assigned class 1,
+        otherwise class 0.
+
+    """
+    def __init__(self, calibrator: VennAbersCalibrator, threshold: float) -> None:
+        _ensure_fitted(calibrator)
+        self.calibrator = calibrator
+        self.threshold = threshold
+
+    def predict(self, model_input: pd.DataFrame | np.ndarray) -> np.ndarray:
+        """
+        Generate binary class predictions using the calibrated probabilities
+        and the configured decision threshold.
+
+        Parameters
+        ----------
+        model_input : pd.DataFrame | np.ndarray
+            Feature matrix of shape (n_samples, n_features).
+
+        Returns
+        -------
+        np.ndarray
+            Binary predictions of shape (n_samples,), where 1 indicates the
+            positive class and 0 the negative class.
+        """
+        proba = self.calibrator.predict_proba(model_input)[:, 1]
+        return (proba >= self.threshold).astype(int)
+    
+    def predict_proba(self, model_input: pd.DataFrame | np.ndarray) -> np.ndarray:
+        """
+        Return class probabilities as a standard sklearn-style array.
+
+        Parameters
+        ----------
+        model_input : pd.DataFrame | np.ndarray
+            Feature matrix of shape (n_samples, n_features).
+
+        Returns
+        -------
+        np.ndarray
+            Array of shape (n_samples, 2), where column 0 is the negative-class
+            probability and column 1 is the positive-class probability.
+        """
+        return self.calibrator.predict_proba(model_input)
+
+
 def fit_calibrated_final_model(
     X: pd.DataFrame | np.ndarray,
     y: pd.Series | np.ndarray,
     best_params: dict,
-    calib_options: dict
-) -> VennAbersCalibrator:
+    calib_options: dict,
+    threshold: float
+) -> ThresholdClassifier:
     """
     Fit an XGBoost classifier on the full dataset and calibrate using Venn-Abers (MAPIE).
 
     This function initializes an XGBClassifier with the provided hyperparameters,
-    validates the input data, and fits a Venn-Abers calibrated classifier.
+    validates the input data, fits a Venn-Abers calibrated classifier, and wraps it
+    in a ThresholdClassifier for decision-boundary-aware predictions. The wrapped
+    model is also logged to MLflow as a pyfunc artifact.
 
     Parameters
     ----------
     X : Union[pd.DataFrame, np.ndarray]
         Feature matrix for training.
+
     y : Union[pd.Series, np.ndarray]
         Target vector for training.
+
     best_params : Dict
         Optimized hyperparameters for XGBoost (e.g., from Optuna or GridSearch).
+
     calib_options : Dict
         Calibration options for Venn-Abers:
             - 'inductive' (bool): whether to use inductive Venn-Abers (default False)
             - 'n_splits' (int): number of CV folds for calibration (default 5)
             - 'random_state' (int): random seed for reproducibility (default 1071)
 
+    threshold : float
+        Decision threshold for converting probabilities into class predictions.
+        Must be between 0 and 1.
+
     Returns
     -------
-    VennAbersCalibrator
-        A fitted Venn-Abers calibrated classifier.
+    ThresholdClassifier
+        A fitted ThresholdClassifier wrapping the Venn-Abers calibrated XGBoost model,
+        using the specified decision threshold. This is the same object logged to MLflow.
 
     Raises
     ------
     ValueError
         If X or y are None or empty.
+        If threshold is not in the range [0.0, 1.0].
     """
     if X is None or y is None:
         raise ValueError("X and y must not be None")
 
+    if not (0.0 <= threshold <= 1.0):
+        raise ValueError("threshold must be between 0 and 1")
+
     n_splits = calib_options.get("n_splits", 5)
     random_state = calib_options.get("random_state", 1071)
+    
+    np.seterr(all="ignore")
 
     X_validated, y_validated = check_X_y(
         X=X,
@@ -69,9 +155,22 @@ def fit_calibrated_final_model(
         n_splits=n_splits,
         random_state=random_state
     )
-
     va_calibrator.fit(X_validated, y_validated)
-    return va_calibrator
+
+    threshold_classifier = ThresholdClassifier(va_calibrator, threshold)
+    sample_input = X[:5]
+    sample_predictions = threshold_classifier.predict(sample_input)
+    model_signature = infer_signature(model_input=X, model_output=sample_predictions)
+
+    mlflow.pyfunc.log_model(
+        name="calibrated_full_xgb_model",
+        python_model=threshold_classifier,
+        signature=model_signature,
+        input_example=sample_input,
+        model_type="classifier",
+    )
+
+    return threshold_classifier
 
 
 

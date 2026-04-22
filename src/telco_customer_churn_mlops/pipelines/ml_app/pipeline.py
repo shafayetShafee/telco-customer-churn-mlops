@@ -31,7 +31,7 @@ def create_ml_pipeline(**kwargs) -> Pipeline:
             Node(
                 func=train_calib_test_split_data,
                 inputs=[
-                    "processed_features_data",
+                    "processed_train_data",
                     "processed_target_col",
                     "params:split_options"
                 ],
@@ -96,7 +96,7 @@ def create_ml_pipeline(**kwargs) -> Pipeline:
                 inputs=[
                     "optuna_best_model",
                     "calibrated_model",
-                    "X_calib", "y_calib"
+                    "X_test", "y_test"
                 ],
                 outputs="calibration_reliability_plot",
                 name="plot_calibration_diagram_node",
@@ -116,43 +116,44 @@ def create_ml_pipeline(**kwargs) -> Pipeline:
             Node(
                 func=fit_calibrated_final_model,
                 inputs=[
-                    "processed_features_data",
+                    "processed_train_data",
                     "processed_target_col",
                     "optuna_best_params",
-                    "params:cvap_calib_options"
+                    "params:cvap_calib_options",
+                    "best_threshold"
                 ],
-                outputs="calibrated_final_xgb_model",
+                outputs="calibrated_full_xgb_model",
                 name="final_model_fitting_node",
                 tags=["training"]
             )
         ]
     )
 
-    inference_pipeline = Pipeline(
-        [
-            Node(
-                func=infer_from_model,
-                inputs=[
-                    "calibrated_final_xgb_model",
-                    "processed_features_data"
-                ],
-                outputs="predicted_probs",
-                name="infer_from_model_node",
-                tags=["inference"] 
-            ),
-            Node(
-                func=decode_predictions,
-                inputs=[
-                    "predicted_probs", 
-                    "best_threshold"
-                ],
-                outputs="final_preds",
-                tags=["inference"]
-            )
-        ]
-    )
+    # inference_pipeline = Pipeline(
+    #     [
+    #         Node(
+    #             func=infer_from_model,
+    #             inputs=[
+    #                 "calibrated_full_xgb_model",
+    #                 "processed_features_data"
+    #             ],
+    #             outputs="predicted_probs",
+    #             name="infer_from_model_node",
+    #             tags=["inference"] 
+    #         ),
+    #         Node(
+    #             func=decode_predictions,
+    #             inputs=[
+    #                 "predicted_probs", 
+    #                 "best_threshold"
+    #             ],
+    #             outputs="final_preds",
+    #             tags=["inference"]
+    #         )
+    #     ]
+    # )
 
     return (
         training_pipeline 
-        +  inference_pipeline 
+        # +  inference_pipeline 
     )

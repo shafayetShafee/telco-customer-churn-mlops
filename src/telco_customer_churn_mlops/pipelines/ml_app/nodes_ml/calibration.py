@@ -56,12 +56,6 @@ def calibrate_fitted_classifer(
     inductive = calib_options.get("inductive", False)
     random_state = calib_options.get("random_state", 1071)
 
-    # try:
-    #     check_is_fitted(model)
-    # except Exception as e:
-    #     raise ValueError(
-    #         "The model appears to be unfitted. Call `fit()` before using this function."
-    #     ) from e
     _ensure_fitted(model)
 
     X_validated, y_validated = check_X_y(
