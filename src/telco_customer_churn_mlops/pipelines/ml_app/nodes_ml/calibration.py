@@ -65,13 +65,14 @@ def calibrate_fitted_classifer(
         accept_sparse=True
     )
 
-    va_calibrator = VennAbersCalibrator(
-        estimator=model,
-        cv=cv,
-        inductive=inductive,
-        random_state=random_state
-    )
-    va_calibrator.fit(X_validated, y_validated)
+    with np.errstate(all="ignore"):
+        va_calibrator = VennAbersCalibrator(
+            estimator=model,
+            cv=cv,
+            inductive=inductive,
+            random_state=random_state
+        )
+        va_calibrator.fit(X_validated, y_validated)
 
     return va_calibrator
 
