@@ -272,4 +272,4 @@ def apply_multi_cat_encoder(
     encoded = encoder.transform(df[multi_cat_cols])
     cols = encoder.get_feature_names_out(multi_cat_cols)
     encoded_df = pd.DataFrame(encoded, columns=cols, index=df.index)
-    return df.drop(columns=multi_cat_cols).join(encoded_df)
+    return df.drop(columns=multi_cat_cols).join(encoded_df).astype('float')
