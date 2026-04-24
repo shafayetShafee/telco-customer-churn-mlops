@@ -9,6 +9,7 @@ from mlflow.exceptions import MlflowException
 from mlflow.models import MetricThreshold, EvaluationResult
 from mlflow.models.model import ModelInfo
 from mlflow.pyfunc import PyFuncModel
+from mlflow.entities.model_registry import ModelVersion
 
 from sklearn.metrics import (
     average_precision_score,
@@ -45,8 +46,9 @@ def _get_champion_version() -> str | None:
     client = mlflow.MlflowClient()
     try:
         mv = client.get_model_version_by_alias(MODEL_NAME, CHAMPION_ALIAS)
-        return mv.version
+        return mv
     except MlflowException:
+        logger.info("No champion registered yet.")
         return None
 
 
@@ -231,14 +233,11 @@ def register_model_if_champion(
     challenger_model_info: ModelInfo,
     challenger_beats_champion: bool,
     registry_options: dict,
-) -> None:
+) -> ModelVersion:
     """
-    Register the calibrated threshold classifier (already logged to MLflow in
-    log_calibrated_model) as champion if the challenger won evaluation or
-    always_replace=True.
-
-    The model was already logged as a pyfunc artifact during the current run —
-    this function only handles registry aliasing and tagging.
+    Register the calibrated threshold classifier as champion if the challenger
+    won evaluation or always_replace=True. Returns the champion ModelVersion
+    object — either the newly registered version or the existing champion.
 
     Parameters
     ----------
@@ -257,6 +256,13 @@ def register_model_if_champion(
             - eval_metric (str): logged as a tag on the registered model
               version, default "recall_score"
 
+    Returns
+    -------
+    mlflow.entities.model_registry.ModelVersion 
+        The champion ModelVersion object — either the newly registered
+        version if the challenger was promoted, or the existing champion
+        if registration was skipped.
+
     Raises
     ------
     RuntimeError
@@ -265,15 +271,15 @@ def register_model_if_champion(
     always_replace = registry_options.get("always_replace", False)
     eval_metric = registry_options.get("eval_metric", "recall_score")
 
+    current_champion_version = _get_champion_version()
+
     if not (challenger_beats_champion or always_replace):
         logger.info(
             "Challenger did not beat champion and always_replace=False — skipping registration."
         )
-        return None
+        return current_champion_version
 
     client = mlflow.MlflowClient()
-    current_champion_version = _get_champion_version()
-
     mv = mlflow.register_model(
         model_uri=challenger_model_info.model_uri, 
         name=MODEL_NAME
@@ -287,19 +293,34 @@ def register_model_if_champion(
         "always_replace" if always_replace else "evaluation",
     )
 
-    if current_champion_version:
+    if current_champion_version.version:
         client.set_model_version_tag(
-            MODEL_NAME, current_champion_version, "candidate_type", "retired_champion"
+            MODEL_NAME, current_champion_version.version, "candidate_type", "retired_champion"
         )
         client.set_model_version_tag(
-            MODEL_NAME, current_champion_version, "deployment_status", "retired"
+            MODEL_NAME, current_champion_version.version, "deployment_status", "retired"
         )
 
     client.set_registered_model_alias(MODEL_NAME, CHAMPION_ALIAS, mv.version)
 
+    if current_champion_version:
+        logger.info(
+            "Registered previous champion model — name: %s | version: %s | model_id: %s\n"
+            "(generated from run_id: %s )",
+            current_champion_version.name,
+            current_champion_version.version,
+            current_champion_version.model_id,
+            current_champion_version.run_id,
+        )
+        
     logger.info(
-        "Registered model as champion: version %s (run: %s) | previous champion: %s",
+        "Current registered champion model — name: %s | version: %s | model_id: %s\n"
+        "(generated from run_id: %s | logged run_id: %s )",
+        mv.name,
         mv.version,
-        challenger_model_info.run_id,
-        current_champion_version or "none",
+        mv.model_id,
+        mv.run_id,
+        challenger_model_info.run_id
     )
+
+    return mv

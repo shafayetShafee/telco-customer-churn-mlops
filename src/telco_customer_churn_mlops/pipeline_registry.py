@@ -27,11 +27,22 @@ def register_pipelines() -> dict[str, Pipeline]:
         + ml_pipeline
     ).only_nodes_with_tags('inference')
 
+    training_pipeline_ml = pipeline_ml_factory(
+        training=training_pipeline,
+        inference=inference_pipeline,
+        input_name='future_infer_data',
+        log_model_kwargs=dict(
+            name="churn_inference_pipeline",
+            signature=None,
+            registered_model_name="churn_inference_pipeline"
+        )
+    )
+
     pipelines = {
         "etl": etl_pipeline,
-        "train": training_pipeline,
-        "inference": inference_pipeline,
-        "__default__": etl_pipeline + training_pipeline
-        + inference_pipeline
+        "train": training_pipeline_ml,
+        "__default__": etl_pipeline 
+        + training_pipeline
     }
     return pipelines
+

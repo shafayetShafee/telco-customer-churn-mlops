@@ -30,10 +30,9 @@ from .nodes_ml.model_registry import (
 #     evaluate_model
 # )
 
-# from .nodes_ml.predict import (
-#     infer_from_model,
-#     decode_predictions
-# )
+from .nodes_ml.predict import (
+    infer_from_model
+)
 
 def create_ml_pipeline(**kwargs) -> Pipeline:
     training_pipeline = Pipeline(
@@ -156,38 +155,30 @@ def create_ml_pipeline(**kwargs) -> Pipeline:
                     "challenger_beats_champion",
                     "params:registry_options"
                 ],
-                outputs=None,
+                outputs="registered_model_version",
                 name="model_registration_node",
                 tags=["training"]
             )
         ]
     )
 
-    # inference_pipeline = Pipeline(
-    #     [
-    #         Node(
-    #             func=infer_from_model,
-    #             inputs=[
-    #                 "calibrated_full_xgb_model",
-    #                 "processed_features_data"
-    #             ],
-    #             outputs="predicted_probs",
-    #             name="infer_from_model_node",
-    #             tags=["inference"] 
-    #         ),
-    #         Node(
-    #             func=decode_predictions,
-    #             inputs=[
-    #                 "predicted_probs", 
-    #                 "best_threshold"
-    #             ],
-    #             outputs="final_preds",
-    #             tags=["inference"]
-    #         )
-    #     ]
-    # )
+    inference_pipeline = Pipeline(
+        [
+            Node(
+                func=infer_from_model,
+                inputs=[
+                    "registered_model_version",
+                    "processed_infer_data",
+                    "params:inference_options"
+                ],
+                outputs="inference_result",
+                name="infer_from_model_node",
+                tags=["inference"] 
+            )
+        ]
+    )
 
     return (
         training_pipeline 
-        # +  inference_pipeline 
++  inference_pipeline 
     )

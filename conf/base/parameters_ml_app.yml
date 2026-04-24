@@ -26,7 +26,10 @@ mlflow_evaluate_options:
   min_absolute_change: 0.05
   min_relative_change: 0.05
 
-
 registry_options:
   always_replace: False
   eval_metric: "recall_score"
+
+inference_options:
+  prediction_col: "churn_prediction"
+  proba_col: "churn_probability"

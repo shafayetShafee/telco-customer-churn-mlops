@@ -64,7 +64,7 @@ def create_etl_pipeline(**kwargs) -> Pipeline:
         [
             Node(
                 func=extract_preprocess_features_data,
-                inputs=["telco_future", "params:features"],
+                inputs=["future_infer_data", "params:features"],
                 outputs="cleaned_infer_data",
                 name="inference_data_preprocessing_node",
                 tags=["inference"],

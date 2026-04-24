@@ -13,6 +13,14 @@ telco_future:
     kedro-viz:
       layer: raw
 
+future_infer_data:
+  type: kedro.io.MemoryDataset
+  metadata:
+    metadata:
+    kedro-viz:
+      layer: raw
+
+
 "cleaned_{train_infer}_data":
   type: pandas.ParquetDataset
   filepath: data/02_intermediate/cleaned_{train_infer}_features_data.parquet
@@ -244,6 +252,18 @@ challenger_beats_champion:
     kedro-viz:
       layer: model_evaluation
 
+registered_model_version:
+  type: pickle.PickleDataset
+  filepath: data/06_models/registered_model_version.pkl
+  metadata: 
+    kedro-viz: 
+      layer: model_registration
+
+inference_result:
+  type: kedro.io.MemoryDataset
+  metadata:
+    kedro-viz:
+      layer: inference
 
 # pipeline_inference_model:
 #   type: kedro_mlflow.io.models.MlflowModelTrackingDataset
