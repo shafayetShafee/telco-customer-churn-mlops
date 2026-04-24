@@ -135,7 +135,7 @@ def log_calibrated_model(
         model_output=sample_predictions
     )
 
-    mlflow.pyfunc.log_model(
+    logged_model_info = mlflow.pyfunc.log_model(
         name="calibrated_threshold_classifier",
         python_model=threshold_classifier,
         signature=model_signature,
@@ -143,7 +143,10 @@ def log_calibrated_model(
         model_type="classifier",
     )
 
-    return threshold_classifier
+    logger.info("Logged model ID: %s", logged_model_info.model_id)
+    logger.info("Logged model run ID: %s", logged_model_info.run_id)
+    
+    return threshold_classifier, logged_model_info
 
 
 

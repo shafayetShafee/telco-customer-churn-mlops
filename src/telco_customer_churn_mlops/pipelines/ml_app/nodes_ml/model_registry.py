@@ -7,6 +7,7 @@ import pandas as pd
 from mapie.calibration import VennAbersCalibrator
 from mlflow.exceptions import MlflowException
 from mlflow.models import MetricThreshold, EvaluationResult
+from mlflow.models.model import ModelInfo
 from mlflow.pyfunc import PyFuncModel
 
 from sklearn.metrics import (
@@ -15,15 +16,11 @@ from sklearn.metrics import (
     log_loss,
 )
 
-from .log_model import ThresholdClassifier
-
 logger = logging.getLogger(__name__)
 
 MODEL_NAME = "calibrated_threshold_classifier"
 CHAMPION_ALIAS = "champion"
 CHALLANGER_ALIAS = "challanger"
-CHAMPION_ALIAS_PREFIX = f"{CHAMPION_ALIAS}_"
-CHALLANGER_ALIAS_PREFIX = f"{CHALLANGER_ALIAS}_"
 
 def _get_champion_run_id() -> str | None:
     """
@@ -58,7 +55,6 @@ def _evaluate_on_predictions(
     X_test: pd.DataFrame,
     y_test: pd.Series,
     target: str,
-    metric_prefix: str,
 ) -> EvaluationResult:
     """
     Run mlflow.models.evaluate using a loaded PyFuncModel.
@@ -77,9 +73,6 @@ def _evaluate_on_predictions(
     target : str
         Name of the target column used in the evaluation dataset.
 
-    metric_prefix : str
-        Prefix of evaluation metric names.
-
     Returns
     -------
     mlflow.models.EvaluationResult
@@ -94,15 +87,15 @@ def _evaluate_on_predictions(
         prediction_proba = model.unwrap_python_model().predict_proba(X_test)[:, 1]
 
         mlflow.log_metrics({
-            f"{metric_prefix}precision_recall_auc" : average_precision_score(
+            "precision_recall_auc": average_precision_score(
                 y_true=y_test, 
                 y_score=prediction_proba
             ),
-            f"{metric_prefix}roc_auc": roc_auc_score(
+            "roc_auc": roc_auc_score(
                 y_true=y_test, 
                 y_score=prediction_proba
             ),
-            f"{metric_prefix}log_loss": log_loss(
+            "log_loss": log_loss(
                 y_true=y_test, 
                 y_pred=prediction_proba
             ),
@@ -118,14 +111,13 @@ def _evaluate_on_predictions(
             evaluator_config={
                 "log_explainer": True,
                 "explainer_type": "permutation",
-                "metric_prefix": metric_prefix,
                 "log_metrics_with_dataset_info": False
             }
         )
 
 
 def evaluate_challenger_vs_champion(
-    calibrated_threshold_classifier: ThresholdClassifier, # noqa # Kedro DAG dependency only
+    challenger_model_info: ModelInfo,
     X_test: pd.DataFrame,
     y_test: pd.Series,
     mlflow_evaluate_options: dict,
@@ -136,6 +128,10 @@ def evaluate_challenger_vs_champion(
 
     Parameters
     ----------
+    challenger_model_info : ModelInfo
+        The mlflow.models.model.ModelInfo object from the logged model 
+        (i.e. challenger model) of the training pipeline.
+
     X_test : pd.DataFrame
         Held-out test features — unseen during training and calibration.
         
@@ -159,41 +155,38 @@ def evaluate_challenger_vs_champion(
         True if the challenger beats (or matches) the champion, or if no
         champion exists (first run). False if the champion is still better.
     """
-    active_run = mlflow.active_run()
-    if active_run is None:
-        raise RuntimeError(
-            "register_model_if_champion must be called within an active MLflow run."
-        )
-    
     target = mlflow_evaluate_options.get("target", "churn")
     eval_metric = mlflow_evaluate_options.get("eval_metric", "recall_score")
     eval_metric_threshold = mlflow_evaluate_options.get("eval_metric_threshold", 0.8)
     min_absolute_change = mlflow_evaluate_options.get("min_absolute_change", 0.05)
     min_relative_change = mlflow_evaluate_options.get("min_relative_change", 0.05)
 
-    current_run_id = active_run.info.run_id
+    logger.info("Challenger model ID: %s", challenger_model_info.model_id)
+    logger.info("Challenger model run ID: %s", challenger_model_info.run_id)
+
     challenger_model = mlflow.pyfunc.load_model(
-        model_uri=f"runs:/{current_run_id}/calibrated_threshold_classifier",
+        model_uri=challenger_model_info.model_uri,
         suppress_warnings=True
     )
     challenger_result = _evaluate_on_predictions(
         model=challenger_model, 
         X_test=X_test, 
         y_test=y_test, 
-        target=target,
-        metric_prefix=CHALLANGER_ALIAS_PREFIX
+        target=target
     )
 
     logger.info(
         "Challenger %s: %.4f",
         eval_metric,
-        challenger_result.metrics[f"{CHALLANGER_ALIAS_PREFIX}{eval_metric}"],
+        challenger_result.metrics[eval_metric],
     )
 
     champion_run_id = _get_champion_run_id()
     if not champion_run_id:
         logger.info("No champion found — challenger wins by default (first run).")
         return True
+
+    logger.info("Champion model run ID: %s", champion_run_id)
 
     champion_model = mlflow.pyfunc.load_model(
         model_uri=f"models:/{MODEL_NAME}@{CHAMPION_ALIAS}",
@@ -203,14 +196,13 @@ def evaluate_challenger_vs_champion(
         model=champion_model, 
         X_test=X_test, 
         y_test=y_test, 
-        target=target,
-        metric_prefix=CHAMPION_ALIAS_PREFIX
+        target=target
     )
 
     logger.info(
         "Champion %s: %.4f",
         eval_metric,
-        champion_result.metrics[f"{CHAMPION_ALIAS_PREFIX}{eval_metric}"],
+        champion_result.metrics[eval_metric],
     )
 
     thresholds = {
@@ -236,6 +228,7 @@ def evaluate_challenger_vs_champion(
 
 
 def register_model_if_champion(
+    challenger_model_info: ModelInfo,
     challenger_beats_champion: bool,
     registry_options: dict,
 ) -> None:
@@ -249,12 +242,14 @@ def register_model_if_champion(
 
     Parameters
     ----------
-    calibrated_threshold_classifier : ThresholdClassifier
-        Present only to declare the Kedro node dependency on
-        log_calibrated_model. Not used directly.
+    challenger_model_info : ModelInfo
+        The mlflow.models.model.ModelInfo object from the logged model 
+        (i.e. challenger model) of the training pipeline.
+
     challenger_beats_champion : bool
         Result from evaluate_challenger_vs_champion. If True, the challenger
         is promoted to champion.
+
     registry_options : dict
         Registry configuration:
             - always_replace (bool): promote regardless of evaluation result,
@@ -267,12 +262,6 @@ def register_model_if_champion(
     RuntimeError
         If called outside an active MLflow run.
     """
-    active_run = mlflow.active_run()
-    if active_run is None:
-        raise RuntimeError(
-            "register_model_if_champion must be called within an active MLflow run."
-        )
-
     always_replace = registry_options.get("always_replace", False)
     eval_metric = registry_options.get("eval_metric", "recall_score")
 
@@ -285,8 +274,10 @@ def register_model_if_champion(
     client = mlflow.MlflowClient()
     current_champion_version = _get_champion_version()
 
-    model_uri = f"runs:/{active_run.info.run_id}/{MODEL_NAME}"
-    mv = mlflow.register_model(model_uri=model_uri, name=MODEL_NAME)
+    mv = mlflow.register_model(
+        model_uri=challenger_model_info.model_uri, 
+        name=MODEL_NAME
+    )
 
     client.set_model_version_tag(MODEL_NAME, mv.version, "candidate_type", "champion")
     client.set_model_version_tag(MODEL_NAME, mv.version, "deployment_status", "production")
@@ -309,6 +300,6 @@ def register_model_if_champion(
     logger.info(
         "Registered model as champion: version %s (run: %s) | previous champion: %s",
         mv.version,
-        active_run.info.run_id,
+        challenger_model_info.run_id,
         current_champion_version or "none",
     )

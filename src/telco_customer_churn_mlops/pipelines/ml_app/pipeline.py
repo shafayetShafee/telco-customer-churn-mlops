@@ -15,15 +15,25 @@ from .nodes_ml.threshold_tuning import (
     tune_threshold,
     plot_threshold_metrics
 )
-from .nodes_ml.model_train import (
-    fit_calibrated_final_model,
-    evaluate_model
+
+from .nodes_ml.log_model import (
+    log_calibrated_model
 )
 
-from .nodes_ml.predict import (
-    infer_from_model,
-    decode_predictions
+from .nodes_ml.model_registry import (
+    evaluate_challenger_vs_champion,
+    register_model_if_champion
 )
+
+# from .nodes_ml.model_train import (
+#     fit_calibrated_final_model,
+#     evaluate_model
+# )
+
+# from .nodes_ml.predict import (
+#     infer_from_model,
+#     decode_predictions
+# )
 
 def create_ml_pipeline(**kwargs) -> Pipeline:
     training_pipeline = Pipeline(
@@ -64,7 +74,7 @@ def create_ml_pipeline(**kwargs) -> Pipeline:
                     "params:prefit_calib_options"
                 ],
                 outputs="calibrated_model",
-                name="calibrated_fitted_classifier_node",
+                name="calibrate_fitted_classifier_node",
                 tags=["training"]
             ),
             Node(
@@ -102,28 +112,52 @@ def create_ml_pipeline(**kwargs) -> Pipeline:
                 name="plot_calibration_diagram_node",
                 tags=["training"]
             ),
+            # Node(
+            #     func=evaluate_model,
+            #     inputs=[
+            #         "calibrated_model",
+            #         "X_test", "y_test",
+            #         "best_threshold"
+            #     ],
+            #     outputs="classification_report_df",
+            #     name="model_evaluate_node",
+            #     tags=["training"]
+            # ),
             Node(
-                func=evaluate_model,
+                func=log_calibrated_model,
                 inputs=[
+                    "X_test",
                     "calibrated_model",
-                    "X_test", "y_test",
                     "best_threshold"
                 ],
-                outputs="classification_report_df",
-                name="model_evaluate_node",
+                outputs=[
+                    "calibrated_threshold_classifier",
+                    "logged_model_info"
+                ],
+                name="calibrated_model_logging_node",
                 tags=["training"]
             ),
             Node(
-                func=fit_calibrated_final_model,
+                func=evaluate_challenger_vs_champion,
                 inputs=[
-                    "processed_train_data",
-                    "processed_target_col",
-                    "optuna_best_params",
-                    "params:cvap_calib_options",
-                    "best_threshold"
+                    "logged_model_info",
+                    "X_test", 
+                    "y_test", 
+                    "params:mlflow_evaluate_options"
                 ],
-                outputs="calibrated_full_xgb_model",
-                name="final_model_fitting_node",
+                outputs="challenger_beats_champion",
+                name="model_evaluation_node",
+                tags=["training"]
+            ),
+            Node(
+                func=register_model_if_champion,
+                inputs=[
+                    "logged_model_info",
+                    "challenger_beats_champion",
+                    "params:registry_options"
+                ],
+                outputs=None,
+                name="model_registration_node",
                 tags=["training"]
             )
         ]

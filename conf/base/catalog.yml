@@ -144,28 +144,28 @@ optuna_best_params:
   filepath: data/06_models/optuna_best_params.pkl
   metadata:
     kedro-viz:
-      layer: models
+      layer: tuning_and_calibration
 
 optuna_search:
   type: pickle.PickleDataset
   filepath: data/06_models/optuna_search.pkl
   metadata:
     kedro-viz:
-      layer: models
+      layer: tuning_and_calibration
 
 optuna_best_model:
   type: pickle.PickleDataset
   filepath: data/06_models/optuna_best_model.pkl
   metadata:
     kedro-viz:
-      layer: models
+      layer: tuning_and_calibration
 
 calibrated_model:
   type: pickle.PickleDataset
   filepath: data/06_models/calibrated_model.pkl
   metadata:
     kedro-viz:
-      layer: models
+      layer: tuning_and_calibration
 
 tuning_threshold_df:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataset
@@ -174,14 +174,14 @@ tuning_threshold_df:
     filepath: data/06_models/tuning_threshold_df.csv
   metadata:
     kedro-viz:
-      layer: models
+      layer: tuning_and_calibration_output
 
 best_threshold:
   type: pickle.PickleDataset
   filepath: data/06_models/best_threshold.pkl
   metadata:
     kedro-viz:
-      layer: models
+      layer: tuning_and_calibration_output
 
 threshold_metrics_plot:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataset
@@ -194,7 +194,7 @@ threshold_metrics_plot:
       bbox_inches: tight
   metadata:
     kedro-viz:
-      layer: model_evaluation
+      layer: tuning_and_calibration_output
 
 calibration_reliability_plot:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataset
@@ -207,23 +207,42 @@ calibration_reliability_plot:
       bbox_inches: tight
   metadata:
     kedro-viz:
-      layer: model_evaluation
+      layer: tuning_and_calibration_output
 
-classification_report_df:
-  type: kedro_mlflow.io.artifacts.MlflowArtifactDataset
-  dataset: 
-    type: pandas.CSVDataset
-    filepath: data/08_reporting/classification_report_df.csv
-  metadata:
-    kedro-viz:
-      layer: model_evaluation
+# classification_report_df:
+#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataset
+#   dataset: 
+#     type: pandas.CSVDataset
+#     filepath: data/08_reporting/classification_report_df.csv
+#   metadata:
+#     kedro-viz:
+#       layer: model_evaluation
 
-calibrated_full_xgb_model:
+# calibrated_full_xgb_model:
+#   type: pickle.PickleDataset
+#   filepath: data/06_models/calibrated_full_xgb_model.pkl
+#   metadata:
+#     kedro-viz:
+#       layer: full_model
+
+calibrated_threshold_classifier:
   type: pickle.PickleDataset
-  filepath: data/06_models/calibrated_full_xgb_model.pkl
+  filepath: data/06_models/calibrated_threshold_classifier.pkl
+  metadata: 
+    kedro-viz: 
+      layer: final_model
+
+logged_model_info:
+  type: kedro.io.MemoryDataset
+  metadata: 
+    kedro-viz: 
+      layer: final_model
+
+challenger_beats_champion:
+  type: kedro.io.MemoryDataset
   metadata:
     kedro-viz:
-      layer: full_model
+      layer: model_evaluation
 
 
 # pipeline_inference_model:
