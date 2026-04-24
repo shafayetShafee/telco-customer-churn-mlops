@@ -6,14 +6,24 @@ import numpy as np
 import pandas as pd
 from mapie.calibration import VennAbersCalibrator
 from mlflow.exceptions import MlflowException
-from mlflow.models import MetricThreshold
+from mlflow.models import MetricThreshold, EvaluationResult
+from mlflow.pyfunc import PyFuncModel
+
+from sklearn.metrics import (
+    average_precision_score,
+    roc_auc_score,
+    log_loss,
+)
+
+from .log_model import ThresholdClassifier
 
 logger = logging.getLogger(__name__)
 
-MODEL_NAME = "calibrated_full_xgb_model"
+MODEL_NAME = "calibrated_threshold_classifier"
 CHAMPION_ALIAS = "champion"
-CHALLENGER_ALIAS = "challenger"
-
+CHALLANGER_ALIAS = "challanger"
+CHAMPION_ALIAS_PREFIX = f"{CHAMPION_ALIAS}_"
+CHALLANGER_ALIAS_PREFIX = f"{CHALLANGER_ALIAS}_"
 
 def _get_champion_run_id() -> str | None:
     """
@@ -44,97 +54,140 @@ def _get_champion_version() -> str | None:
 
 
 def _evaluate_on_predictions(
-    model_preds: np.ndarray,
+    model: PyFuncModel,
     X_test: pd.DataFrame,
     y_test: pd.Series,
     target: str,
-) -> mlflow.models.EvaluationResult:
+    metric_prefix: str,
+) -> EvaluationResult:
     """
-    Run mlflow.evaluate on static predictions — no model URI needed.
+    Run mlflow.models.evaluate using a loaded PyFuncModel.
 
     Parameters
     ----------
-    model_preds : np.ndarray
-        Binary class predictions (0/1) from the model.
+    model : mlflow.pyfunc.PyFuncModel
+        A loaded MLflow pyfunc model.
+    
     X_test : pd.DataFrame
-        Feature matrix for the test set.
+        Held-out feature matrix — unseen during training and calibration.
+    
     y_test : pd.Series
-        True labels for the test set.
+        Held-out true labels.
+
     target : str
-        Name of the target column.
+        Name of the target column used in the evaluation dataset.
+
+    metric_prefix : str
+        Prefix of evaluation metric names.
 
     Returns
     -------
     mlflow.models.EvaluationResult
+        Evaluation result containing metrics and artifacts.
     """
-    eval_data = X_test.copy()
-    eval_data[target] = y_test.values
-    eval_data["prediction"] = model_preds
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
 
-    return mlflow.models.evaluate(
-        data=eval_data,
-        targets=target,
-        predictions="prediction",
-        model_type="classifier",
-    )
+        eval_data = X_test.copy()
+        eval_data[target] = y_test.values
+
+        prediction_proba = model.unwrap_python_model().predict_proba(X_test)[:, 1]
+
+        mlflow.log_metrics({
+            f"{metric_prefix}precision_recall_auc" : average_precision_score(
+                y_true=y_test, 
+                y_score=prediction_proba
+            ),
+            f"{metric_prefix}roc_auc": roc_auc_score(
+                y_true=y_test, 
+                y_score=prediction_proba
+            ),
+            f"{metric_prefix}log_loss": log_loss(
+                y_true=y_test, 
+                y_pred=prediction_proba
+            ),
+        })
+
+        return mlflow.models.evaluate(
+            model=model,
+            data=eval_data,
+            targets=target,
+            model_type="classifier",
+            evaluators="default",
+            feature_names=list(X_test.columns),
+            evaluator_config={
+                "log_explainer": True,
+                "explainer_type": "permutation",
+                "metric_prefix": metric_prefix,
+                "log_metrics_with_dataset_info": False
+            }
+        )
 
 
 def evaluate_challenger_vs_champion(
-    calibrated_model: VennAbersCalibrator,
+    calibrated_threshold_classifier: ThresholdClassifier, # noqa # Kedro DAG dependency only
     X_test: pd.DataFrame,
     y_test: pd.Series,
-    threshold: float,
-    registry_options: dict,
+    mlflow_evaluate_options: dict,
 ) -> bool:
     """
-    Evaluate the challenger (held-out calibrated model) against the current
-    champion on the test set, using static predictions to avoid needing a
-    model URI.
-
-    The held-out calibrated_model is used as an honest proxy for the full
-    model's expected production performance — both are trained with the same
-    hyperparameters and threshold, but the held-out model has never seen X_test.
+    Evaluate the challenger (logged in the current MLflow run) against the
+    current champion on the test set.
 
     Parameters
     ----------
-    calibrated_model : VennAbersCalibrator
-        Held-out calibrated model fitted on X_train + X_calib only.
-        Used as an honest performance proxy — never registered to production.
     X_test : pd.DataFrame
-        Held-out test features — unseen by calibrated_model.
+        Held-out test features — unseen during training and calibration.
+        
     y_test : pd.Series
         Held-out test labels.
-    threshold : float
-        Decision threshold applied to predict_proba output.
-    registry_options : dict
-        Registry configuration:
-            - target (str): name of the target column
+
+    mlflow_evaluate_options : dict
+        Evaluation configuration:
+            - target (str): name of the target column, default "churn"
             - eval_metric (str): metric to compare on, default "recall_score"
-            - min_absolute_change (float): minimum absolute improvement required, default 0.0
-            - min_relative_change (float): minimum relative improvement required, default 0.0
+            - eval_metric_threshold (float): minimum acceptable metric value,
+              default 0.8
+            - min_absolute_change (float): minimum absolute improvement
+              required over champion, default 0.05
+            - min_relative_change (float): minimum relative improvement
+              required over champion, default 0.05
 
     Returns
     -------
     bool
-        True if challenger beats (or matches) the champion, or if no champion exists.
-        False if the champion is still better.
+        True if the challenger beats (or matches) the champion, or if no
+        champion exists (first run). False if the champion is still better.
     """
-    warnings.filterwarnings("ignore")
+    active_run = mlflow.active_run()
+    if active_run is None:
+        raise RuntimeError(
+            "register_model_if_champion must be called within an active MLflow run."
+        )
+    
+    target = mlflow_evaluate_options.get("target", "churn")
+    eval_metric = mlflow_evaluate_options.get("eval_metric", "recall_score")
+    eval_metric_threshold = mlflow_evaluate_options.get("eval_metric_threshold", 0.8)
+    min_absolute_change = mlflow_evaluate_options.get("min_absolute_change", 0.05)
+    min_relative_change = mlflow_evaluate_options.get("min_relative_change", 0.05)
 
-    target = registry_options.get("target", "churn")
-    eval_metric = registry_options.get("eval_metric", "recall_score")
-    eval_metric_threshold = registry_options.get("eval_metric_threshold", 0.8)
-    min_absolute_change = registry_options.get("min_absolute_change", 0.05)
-    min_relative_change = registry_options.get("min_relative_change", 0.05)
-
-    challenger_proba = calibrated_model.predict_proba(X_test)[:, 1]
-    challenger_preds = (challenger_proba >= threshold).astype(int)
-    challenger_result = _evaluate_on_predictions(challenger_preds, X_test, y_test, target)
+    current_run_id = active_run.info.run_id
+    challenger_model = mlflow.pyfunc.load_model(
+        model_uri=f"runs:/{current_run_id}/calibrated_threshold_classifier",
+        suppress_warnings=True
+    )
+    challenger_result = _evaluate_on_predictions(
+        model=challenger_model, 
+        X_test=X_test, 
+        y_test=y_test, 
+        target=target,
+        metric_prefix=CHALLANGER_ALIAS_PREFIX
+    )
 
     logger.info(
         "Challenger %s: %.4f",
         eval_metric,
-        challenger_result.metrics[eval_metric],
+        challenger_result.metrics[f"{CHALLANGER_ALIAS_PREFIX}{eval_metric}"],
     )
 
     champion_run_id = _get_champion_run_id()
@@ -142,15 +195,22 @@ def evaluate_challenger_vs_champion(
         logger.info("No champion found — challenger wins by default (first run).")
         return True
 
-    # Champion predictions — load from registry and predict
-    champion_model = mlflow.pyfunc.load_model(f"models:/{MODEL_NAME}@{CHAMPION_ALIAS}")
-    champion_preds = champion_model.predict(X_test)
-    champion_result = _evaluate_on_predictions(champion_preds, X_test, y_test, target)
+    champion_model = mlflow.pyfunc.load_model(
+        model_uri=f"models:/{MODEL_NAME}@{CHAMPION_ALIAS}",
+        suppress_warnings=True
+    )
+    champion_result = _evaluate_on_predictions(
+        model=champion_model, 
+        X_test=X_test, 
+        y_test=y_test, 
+        target=target,
+        metric_prefix=CHAMPION_ALIAS_PREFIX
+    )
 
     logger.info(
-        "Champion   %s: %.4f",
+        "Champion %s: %.4f",
         eval_metric,
-        champion_result.metrics[eval_metric],
+        champion_result.metrics[f"{CHAMPION_ALIAS_PREFIX}{eval_metric}"],
     )
 
     thresholds = {
@@ -176,29 +236,43 @@ def evaluate_challenger_vs_champion(
 
 
 def register_model_if_champion(
-    calibrated_full_xgb_model: VennAbersCalibrator,  # Kedro DAG dependency only
     challenger_beats_champion: bool,
     registry_options: dict,
 ) -> None:
     """
-    Register the full model (already logged to MLflow in fit_calibrated_final_model)
-    as champion if the challenger won evaluation or always_replace=True.
+    Register the calibrated threshold classifier (already logged to MLflow in
+    log_calibrated_model) as champion if the challenger won evaluation or
+    always_replace=True.
 
-    The full model was already logged as a pyfunc artifact during fitting —
+    The model was already logged as a pyfunc artifact during the current run —
     this function only handles registry aliasing and tagging.
 
     Parameters
     ----------
-    calibrated_full_xgb_model : VennAbersCalibrator
-        Present only to declare the Kedro node dependency on fit_calibrated_final_model.
-        Not used directly.
+    calibrated_threshold_classifier : ThresholdClassifier
+        Present only to declare the Kedro node dependency on
+        log_calibrated_model. Not used directly.
     challenger_beats_champion : bool
-        Result from evaluate_challenger_vs_champion.
+        Result from evaluate_challenger_vs_champion. If True, the challenger
+        is promoted to champion.
     registry_options : dict
         Registry configuration:
-            - always_replace (bool): promote regardless of evaluation, default False
-            - eval_metric (str): logged as a tag on the model version
+            - always_replace (bool): promote regardless of evaluation result,
+              default False
+            - eval_metric (str): logged as a tag on the registered model
+              version, default "recall_score"
+
+    Raises
+    ------
+    RuntimeError
+        If called outside an active MLflow run.
     """
+    active_run = mlflow.active_run()
+    if active_run is None:
+        raise RuntimeError(
+            "register_model_if_champion must be called within an active MLflow run."
+        )
+
     always_replace = registry_options.get("always_replace", False)
     eval_metric = registry_options.get("eval_metric", "recall_score")
 
@@ -206,24 +280,14 @@ def register_model_if_champion(
         logger.info(
             "Challenger did not beat champion and always_replace=False — skipping registration."
         )
-        return
-
-    active_run = mlflow.active_run()
-    if active_run is None:
-        raise RuntimeError(
-            "register_model_if_champion must be called within an active MLflow run."
-        )
+        return None
 
     client = mlflow.MlflowClient()
-
-    # Snapshot current champion version before we overwrite the alias
     current_champion_version = _get_champion_version()
 
-    # Register the full model from the active run
-    model_uri = f"runs:/{active_run.info.run_id}/model"
+    model_uri = f"runs:/{active_run.info.run_id}/{MODEL_NAME}"
     mv = mlflow.register_model(model_uri=model_uri, name=MODEL_NAME)
 
-    # Tag the new version before aliasing — clean audit trail
     client.set_model_version_tag(MODEL_NAME, mv.version, "candidate_type", "champion")
     client.set_model_version_tag(MODEL_NAME, mv.version, "deployment_status", "production")
     client.set_model_version_tag(MODEL_NAME, mv.version, "eval_metric", eval_metric)
@@ -232,7 +296,6 @@ def register_model_if_champion(
         "always_replace" if always_replace else "evaluation",
     )
 
-    # Retire old champion tags before reassigning alias
     if current_champion_version:
         client.set_model_version_tag(
             MODEL_NAME, current_champion_version, "candidate_type", "retired_champion"
@@ -241,15 +304,10 @@ def register_model_if_champion(
             MODEL_NAME, current_champion_version, "deployment_status", "retired"
         )
 
-    # Promote — champion alias moves to new version
     client.set_registered_model_alias(MODEL_NAME, CHAMPION_ALIAS, mv.version)
 
-    # Challenger alias points to this version until the next candidate arrives
-    # (will be reassigned at the start of the next training run)
-    client.set_registered_model_alias(MODEL_NAME, CHALLENGER_ALIAS, mv.version)
-
     logger.info(
-        "Registered full model as champion: version %s (run: %s) | previous champion: %s",
+        "Registered model as champion: version %s (run: %s) | previous champion: %s",
         mv.version,
         active_run.info.run_id,
         current_champion_version or "none",

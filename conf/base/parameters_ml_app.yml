@@ -5,7 +5,7 @@ split_options:
   
 optuna_options:
   cv: 5
-  n_trials: 50
+  n_trials: 10
   random_state: 1070
 
 prefit_calib_options:
@@ -15,10 +15,9 @@ prefit_calib_options:
 
 min_recall: 0.80
 
-cvap_calib_options:
-  n_splits: 5
-  random_state: 1070
-
+# cvap_calib_options:
+#   n_splits: 5
+#   random_state: 1070
 
 mlflow_evaluate_options:
   target: "churn"
@@ -26,3 +25,8 @@ mlflow_evaluate_options:
   eval_metric_threshold: 0.8
   min_absolute_change: 0.05
   min_relative_change: 0.05
+
+
+registry_options:
+  always_replace: False
+  eval_metric: "recall_score"
