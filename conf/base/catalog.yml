@@ -265,6 +265,13 @@ inference_result:
     kedro-viz:
       layer: inference
 
+served_predictions:
+  type: pandas.CSVDataset
+  filepath: data/08_reporting/served_predictions.csv
+  metadata:
+    kedro-viz:
+      layer: inference  
+
 # pipeline_inference_model:
 #   type: kedro_mlflow.io.models.MlflowModelTrackingDataset
 #   flavor: mlflow.pyfunc
