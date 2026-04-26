@@ -32,7 +32,7 @@ def register_pipelines() -> dict[str, Pipeline]:
 
     if not model_reg_params:
         logger.warning(
-            "No 'model_registry_options' found in [bold blue]parameters*.yml[/] "
+            "No [bold dark_orange3]model_registry_options[/] found in [bold blue]parameters*.yml[/] "
             "in [bold magenta]conf/[/] directory. "
             "[bold yellow]Falling back to defaults[/]: \n%s",
             pretty_repr(model_reg_config.model_dump()),
