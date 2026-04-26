@@ -1,4 +1,6 @@
-model_registry_options:
+model_registry_options_m:
   model_name: "calibrated_threshold_classifier"
   champion_alias: "champion"
   inference_pipeline_name: "churn_inference_pipeline"
+  always_replace: False
+  eval_metric: "recall_score"

@@ -5,16 +5,24 @@ class ModelRegistryConfig(BaseModel):
     model_name: str = "calibrated_threshold_classifier"
     champion_alias: str = "champion"
     inference_pipeline_name: str = "churn_inference_pipeline"
+    always_replace: bool = False
+    eval_metric: str = "recall_score"
 
-    @field_validator('*', mode='before')
+    @field_validator(
+        "model_name",
+        "champion_alias",
+        "inference_pipeline_name",
+        "eval_metric",
+        mode="before",
+    )
     @classmethod
     def must_be_non_empty_string(cls, value: str, info: ValidationInfo) -> str:
         if not isinstance(value, str) or not value.strip():
-            raise ValueError(f"Field '{info.field_name}' must be a non-empty string, got: {value!r}")
+            raise ValueError(
+                f"Field '{info.field_name}' must be a non-empty string, got: {value!r}"
+            )
         return value
-    
+
     @classmethod
     def from_params(cls, params: dict) -> "ModelRegistryConfig":
         return cls(**params)
-    
-

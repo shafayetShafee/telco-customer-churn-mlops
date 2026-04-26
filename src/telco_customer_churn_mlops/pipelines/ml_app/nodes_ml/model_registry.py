@@ -18,7 +18,6 @@ logger = logging.getLogger(__name__)
 
 MODEL_NAME = "calibrated_threshold_classifier"
 CHAMPION_ALIAS = "champion"
-CHALLANGER_ALIAS = "challanger"
 
 
 def _get_champion_run_id() -> str | None:
