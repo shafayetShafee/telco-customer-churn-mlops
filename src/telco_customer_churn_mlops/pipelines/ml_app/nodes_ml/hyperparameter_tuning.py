@@ -1,12 +1,11 @@
 from typing import Any
 
+import mlflow
 import pandas as pd
 from optuna.distributions import FloatDistribution, IntDistribution
 from optuna_integration import OptunaSearchCV
 from sklearn.metrics import average_precision_score, make_scorer
 from xgboost import XGBClassifier
-
-import mlflow
 
 
 def tune_xgb_pr_auc(
@@ -18,19 +17,33 @@ def tune_xgb_pr_auc(
     Perform hyperparameter tuning for an XGBoost classifier using OptunaSearchCV,
     optimizing for PR-AUC (average precision).
 
-    Args:
-        X_train (pd.DataFrame): Training features.
-        y_train (pd.Series | pd.DataFrame): Training labels.
-        optuna_options (dict): Dictionary containing options:
-            - 'n_trials': int, number of Optuna trials
-            - 'random_state': int, random seed
-            - 'cv': int, number of cross-validation folds
+    Parameters
+    ----------
+    X_train : pd.DataFrame
+        Training feature matrix.
+    y_train : pd.Series or pd.DataFrame
+        Training target values.
+    optuna_options : dict
+        Dictionary of Optuna configuration options. Expected keys include:
+        - 'n_trials' : int
+            Number of Optuna trials.
+        - 'random_state' : int
+            Random seed for reproducibility.
+        - 'cv' : int
+            Number of cross-validation folds.
 
-    Returns:
-        Tuple[XGBClassifier, dict[str, Any], OptunaSearchCV]:
-            - best_model: fitted XGBClassifier
-            - best_params: dict of best hyperparameters
-            - optuna_search: the OptunaSearchCV object with full optimization results
+    Returns
+    -------
+    best_model : XGBClassifier
+        Fitted model with the best-found hyperparameters.
+    best_params : dict of str to Any
+        Best hyperparameter configuration identified by Optuna.
+    optuna_search : OptunaSearchCV
+        Fitted OptunaSearchCV object containing full optimization results.
+
+    Notes
+    -----
+    The function returns a tuple of (best_model, best_params, optuna_search).
     """
     pos_count = (y_train == 1).sum()
     neg_count = (y_train == 0).sum()
@@ -81,7 +94,26 @@ def tune_xgb_pr_auc(
     return best_model, best_params, optuna_search
 
 
+
 def _sanitize(params: dict) -> dict:
+    """
+    Convert parameter values to JSON-serializable Python scalars.
+
+    Parameters
+    ----------
+    params : dict
+        Dictionary of parameters, potentially containing NumPy scalar types.
+
+    Returns
+    -------
+    dict
+        Dictionary with values converted to native Python types where applicable.
+
+    Notes
+    -----
+    Values exposing a `.item()` method (e.g., NumPy scalars) are converted
+    using that method. Other values are returned unchanged.
+    """
     return {
         k: (v.item() if hasattr(v, "item") else v)
         for k, v in params.items()
