@@ -109,9 +109,10 @@ def _evaluate_on_predictions(
             evaluators="default",
             feature_names=list(X_test.columns),
             evaluator_config={
-                "log_explainer": True,
-                "explainer_type": "permutation",
-                "log_metrics_with_dataset_info": False
+                "log_model_explainability": False
+                # "log_explainer": False,
+                # "explainer_type": "permutation",
+                # "log_metrics_with_dataset_info": False
             }
         )
 
