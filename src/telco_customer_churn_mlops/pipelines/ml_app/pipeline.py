@@ -152,4 +152,4 @@ def create_ml_pipeline(**kwargs) -> Pipeline:
         ]
     )
 
-    return training_pipeline + inference_pipeline
+    return (training_pipeline + inference_pipeline)

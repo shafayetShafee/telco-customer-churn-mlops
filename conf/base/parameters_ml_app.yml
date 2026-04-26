@@ -4,8 +4,8 @@ split_options:
   random_state: 1070
   
 optuna_options:
-  cv: 5
-  n_trials: 10
+  cv: 2
+  n_trials: 2
   random_state: 1070
 
 prefit_calib_options:

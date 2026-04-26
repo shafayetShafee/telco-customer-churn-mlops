@@ -247,7 +247,8 @@ logged_model_info:
       layer: final_model
 
 challenger_beats_champion:
-  type: kedro.io.MemoryDataset
+  type: pickle.PickleDataset
+  filepath: data/06_models/challenger_beats_champion.pkl
   metadata:
     kedro-viz:
       layer: model_evaluation

@@ -35,7 +35,7 @@ def register_pipelines() -> dict[str, Pipeline]:
         log_model_kwargs=dict(
             name="churn_inference_pipeline",
             signature=None,
-            registered_model_name="churn_inference_pipeline"
+            registered_model_name=None
         )
     )
 
