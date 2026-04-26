@@ -39,14 +39,14 @@ def register_pipelines() -> dict[str, Pipeline]:
         )
     )
 
+    train_etl_pipeline = etl_pipeline.only_nodes_with_tags('training')
     user_pipeline = create_user_pipeline()
 
     pipelines = {
-        "etl": etl_pipeline,
+        "etl": train_etl_pipeline,
         "train": training_pipeline_ml,
         "user": user_pipeline,
-        "__default__": etl_pipeline
-        + training_pipeline + user_pipeline
+        "__default__": train_etl_pipeline + training_pipeline
     }
     return pipelines
 
