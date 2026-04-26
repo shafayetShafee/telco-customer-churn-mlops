@@ -1,12 +1,14 @@
 import logging
-import pandas as pd
-import numpy as np
 
 import mlflow
+import numpy as np
+import pandas as pd
 from mlflow.entities.model_registry import ModelVersion
+
 from .log_model import ThresholdClassifier
 
 logger = logging.getLogger(__name__)
+
 
 def infer_from_model(
     registered_model_version: ModelVersion,
@@ -23,7 +25,7 @@ def infer_from_model(
 
     Parameters
     ----------
-    registered_model_version: mlflow.entities.model_registry.ModelVersion 
+    registered_model_version: mlflow.entities.model_registry.ModelVersion
         The champion ModelVersion object — either the newly registered
         version if the challenger was promoted, or the existing champion
         if registration was skipped.
@@ -81,37 +83,3 @@ def infer_from_model(
             proba_col: probabilities,
         }
     )
-
-
-# def decode_predictions(
-#     probabilities: pd.Series,
-#     threshold: float
-# ) -> pd.Series:
-#     """
-#     Convert predicted probabilities into class labels using a threshold.
-
-#     Parameters
-#     ----------
-#     probabilities : pd.Series
-#         Predicted probabilities for the positive class.
-        
-#     threshold : float
-#         Decision threshold.
-
-#     Returns
-#     -------
-#     pd.Series
-#         Predicted labels: "churn" or "not-churn".
-#     """
-
-#     if probabilities is None or len(probabilities) == 0:
-#         raise ValueError("Probabilities must not be None or empty")
-
-#     if not (0 <= threshold <= 1):
-#         raise ValueError("Threshold must be between 0 and 1")
-
-#     predictions = probabilities.apply(
-#         lambda p: "churn" if p > threshold else "not-churn"
-#     )
-
-#     return predictions.rename("churn_prediction")

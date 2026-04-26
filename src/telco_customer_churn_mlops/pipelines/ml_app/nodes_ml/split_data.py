@@ -1,7 +1,3 @@
-"""
-Contains ML nodes of kedro pipelines
-"""
-
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
@@ -14,23 +10,43 @@ def train_calib_test_split_data(
     """
     Split feature and target data into train, calibration, and test sets.
 
-    Args:
-        feat_df (pd.DataFrame):
-            DataFrame containing feature columns.
-        target (pd.Series):
-            Series containing the target variable.
-        split_params (dict):
-            Dictionary containing split configuration:
-            - 'test_size' (float): proportion of full data for test set.
-            - 'calib_size' (float): proportion of full data for calibration set.
-            - 'random_state' (int): random seed for reproducibility.
+    Parameters
+    ----------
+    feat_df : pd.DataFrame
+        DataFrame containing feature columns.
 
-    Returns:
-        Tuple:
-            - X_train, X_calib, X_test
-            - y_train, y_calib, y_test
+    target : pd.Series
+        Target variable.
+
+    split_params : dict
+        Dictionary containing split configuration with keys:
+        - 'test_size' : float
+            Proportion of the full dataset used for the test set.
+        - 'calib_size' : float
+            Proportion of the full dataset used for the calibration set.
+        - 'random_state' : int
+            Random seed for reproducibility.
+
+    Returns
+    -------
+    X_train : pd.DataFrame
+        Training feature set.
+    X_calib : pd.DataFrame
+        Calibration feature set.
+    X_test : pd.DataFrame
+        Test feature set.
+    y_train : pd.Series
+        Training target values.
+    y_calib : pd.Series
+        Calibration target values.
+    y_test : pd.Series
+        Test target values.
+
+    Notes
+    -----
+    Returns a tuple in the following order:
+    (X_train, X_calib, X_test, y_train, y_calib, y_test).
     """
-
     test_size = split_params["test_size"]
     calib_size = split_params["calib_size"]
     random_state = split_params["random_state"]

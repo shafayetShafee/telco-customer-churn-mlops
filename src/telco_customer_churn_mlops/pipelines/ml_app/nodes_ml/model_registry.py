@@ -2,19 +2,16 @@ import logging
 import warnings
 
 import mlflow
-import numpy as np
 import pandas as pd
-from mapie.calibration import VennAbersCalibrator
+from mlflow.entities.model_registry import ModelVersion
 from mlflow.exceptions import MlflowException
-from mlflow.models import MetricThreshold, EvaluationResult
+from mlflow.models import EvaluationResult, MetricThreshold
 from mlflow.models.model import ModelInfo
 from mlflow.pyfunc import PyFuncModel
-from mlflow.entities.model_registry import ModelVersion
-
 from sklearn.metrics import (
     average_precision_score,
-    roc_auc_score,
     log_loss,
+    roc_auc_score,
 )
 
 logger = logging.getLogger(__name__)
@@ -22,6 +19,7 @@ logger = logging.getLogger(__name__)
 MODEL_NAME = "calibrated_threshold_classifier"
 CHAMPION_ALIAS = "champion"
 CHALLANGER_ALIAS = "challanger"
+
 
 def _get_champion_run_id() -> str | None:
     """
@@ -65,10 +63,10 @@ def _evaluate_on_predictions(
     ----------
     model : mlflow.pyfunc.PyFuncModel
         A loaded MLflow pyfunc model.
-    
+
     X_test : pd.DataFrame
         Held-out feature matrix — unseen during training and calibration.
-    
+
     y_test : pd.Series
         Held-out true labels.
 
@@ -90,15 +88,15 @@ def _evaluate_on_predictions(
 
         mlflow.log_metrics({
             "precision_recall_auc": average_precision_score(
-                y_true=y_test, 
+                y_true=y_test,
                 y_score=prediction_proba
             ),
             "roc_auc": roc_auc_score(
-                y_true=y_test, 
+                y_true=y_test,
                 y_score=prediction_proba
             ),
             "log_loss": log_loss(
-                y_true=y_test, 
+                y_true=y_test,
                 y_pred=prediction_proba
             ),
         })
@@ -131,12 +129,12 @@ def evaluate_challenger_vs_champion(
     Parameters
     ----------
     challenger_model_info : ModelInfo
-        The mlflow.models.model.ModelInfo object from the logged model 
+        The mlflow.models.model.ModelInfo object from the logged model
         (i.e. challenger model) of the training pipeline.
 
     X_test : pd.DataFrame
         Held-out test features — unseen during training and calibration.
-        
+
     y_test : pd.Series
         Held-out test labels.
 
@@ -171,9 +169,9 @@ def evaluate_challenger_vs_champion(
         suppress_warnings=True
     )
     challenger_result = _evaluate_on_predictions(
-        model=challenger_model, 
-        X_test=X_test, 
-        y_test=y_test, 
+        model=challenger_model,
+        X_test=X_test,
+        y_test=y_test,
         target=target
     )
 
@@ -195,9 +193,9 @@ def evaluate_challenger_vs_champion(
         suppress_warnings=True
     )
     champion_result = _evaluate_on_predictions(
-        model=champion_model, 
-        X_test=X_test, 
-        y_test=y_test, 
+        model=champion_model,
+        X_test=X_test,
+        y_test=y_test,
         target=target
     )
 
@@ -242,7 +240,7 @@ def register_model_if_champion(
     Parameters
     ----------
     challenger_model_info : ModelInfo
-        The mlflow.models.model.ModelInfo object from the logged model 
+        The mlflow.models.model.ModelInfo object from the logged model
         (i.e. challenger model) of the training pipeline.
 
     challenger_beats_champion : bool
@@ -258,7 +256,7 @@ def register_model_if_champion(
 
     Returns
     -------
-    mlflow.entities.model_registry.ModelVersion 
+    mlflow.entities.model_registry.ModelVersion
         The champion ModelVersion object — either the newly registered
         version if the challenger was promoted, or the existing champion
         if registration was skipped.
@@ -281,7 +279,7 @@ def register_model_if_champion(
 
     client = mlflow.MlflowClient()
     mv = mlflow.register_model(
-        model_uri=challenger_model_info.model_uri, 
+        model_uri=challenger_model_info.model_uri,
         name=MODEL_NAME
     )
 
@@ -312,7 +310,7 @@ def register_model_if_champion(
             current_champion_version.model_id,
             current_champion_version.run_id,
         )
-        
+
     logger.info(
         "Current registered champion model — name: %s | version: %s | model_id: %s\n"
         "(generated from run_id: %s | logged run_id: %s )",

@@ -2,11 +2,9 @@ from collections.abc import Iterable
 from typing import Any
 
 import matplotlib.pyplot as plt
+import mlflow
 import numpy as np
 import pandas as pd
-
-# from sklearn.utils.validation import check_is_fitted
-# from sklearn.exceptions import NotFittedError
 from mapie.calibration import VennAbersCalibrator
 from matplotlib.figure import Figure
 from sklearn.base import ClassifierMixin
@@ -19,8 +17,6 @@ from sklearn.metrics import (
 )
 
 from .utils import _ensure_fitted
-
-import mlflow
 
 
 def _evaluate_thresholds(
@@ -95,15 +91,6 @@ def _evaluate_thresholds(
     use_proba = kwargs.get("use_proba", True)
     zero_division = kwargs.get("zero_division", 0)
 
-    # not_fitted_msg = "The model appears to be unfitted. Call `fit()` before using this function."
-    # if hasattr(model, "is_fitted"):
-    #     if not getattr(model, "is_fitted"):
-    #         raise ValueError(not_fitted_msg)
-    # else:
-    #     try:
-    #         check_is_fitted(model)
-    #     except NotFittedError as e:
-    #         raise ValueError(not_fitted_msg) from e
     _ensure_fitted(model)
 
     if use_proba:
@@ -259,7 +246,7 @@ def tune_threshold(
     best_threshold = _select_threshold_by_recall(df, min_recall)
 
     mlflow.log_metric("best_threshold", best_threshold)
-    
+
     return df, best_threshold
 
 
@@ -275,12 +262,12 @@ def plot_threshold_metrics(
     Parameters
     ----------
     df : pd.DataFrame
-    DataFrame containing threshold evaluation results. Must include
-    a 'threshold' column and metric columns (e.g., 'precision',
-    'recall', 'f1', 'accuracy').
+        DataFrame containing threshold evaluation results. Must include
+        a 'threshold' column and metric columns (e.g., 'precision',
+        'recall', 'f1', 'accuracy').
 
     title : Optional[str]
-    Title of the plot. Defaults to "Threshold Tuning Metrics".
+        Title of the plot. Defaults to "Threshold Tuning Metrics".
 
     Returns
     -------

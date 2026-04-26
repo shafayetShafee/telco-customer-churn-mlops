@@ -5,10 +5,6 @@ import numpy as np
 import pandas as pd
 from mapie.calibration import VennAbersCalibrator
 from mlflow.models import infer_signature
-# from sklearn.base import ClassifierMixin
-# from sklearn.metrics import classification_report
-# from sklearn.utils.validation import check_X_y
-# from xgboost import XGBClassifier
 
 from .utils import _ensure_fitted
 
@@ -63,7 +59,7 @@ class ThresholdClassifier(mlflow.pyfunc.PythonModel):
         """
         proba = self.calibrator.predict_proba(model_input)[:, 1]
         return (proba >= self.threshold).astype(int)
-    
+
     def predict_proba(self, model_input: pd.DataFrame | np.ndarray) -> np.ndarray:
         """
         Return class probabilities as a standard sklearn-style array.
@@ -121,9 +117,9 @@ def log_calibrated_model(
     """
     if not (0.0 <= threshold <= 1.0):
         raise ValueError("threshold must be between 0 and 1")
-    
+
     _ensure_fitted(model)
-    
+
     threshold_classifier = ThresholdClassifier(model, threshold)
     sample_input = X[:5]
 
@@ -131,7 +127,7 @@ def log_calibrated_model(
         sample_predictions = threshold_classifier.predict(sample_input)
 
     model_signature = infer_signature(
-        model_input=X, 
+        model_input=X,
         model_output=sample_predictions
     )
 
@@ -145,79 +141,6 @@ def log_calibrated_model(
 
     logger.info("Logged model ID: %s", logged_model_info.model_id)
     logger.info("Logged model run ID: %s", logged_model_info.run_id)
-    
+
     return threshold_classifier, logged_model_info
 
-
-
-# def evaluate_model(
-#     model: ClassifierMixin | VennAbersCalibrator,
-#     X_test: pd.DataFrame | np.ndarray,
-#     y_test: pd.Series | np.ndarray,
-#     threshold: float
-# ) -> pd.DataFrame:
-#     """
-#     Evaluate a fitted classification model using a custom decision threshold.
-
-#     This function validates the model, generates probability predictions,
-#     applies a custom threshold, computes a classification report, logs it,
-#     and returns it as a DataFrame.
-
-#     Parameters
-#     ----------
-#     model : ClassifierMixin | VennAbersCalibrator
-#         A fitted classification or calibrated model supporting `predict_proba`.
-
-#     X_test : pd.DataFrame or np.ndarray
-#         Test features.
-
-#     y_test : pd.Series or np.ndarray
-#         True labels for the test data.
-
-#     threshold : float
-#         Decision threshold for converting probabilities into class predictions.
-#         Must be between 0 and 1.
-
-#     Returns
-#     -------
-#     pd.DataFrame
-#         Structured classification report with columns:
-#         - class: label
-#         - precision
-#         - recall
-#         - f1-score
-#         - support
-#         - accuracy / macro avg / weighted avg (from scikit-learn)
-
-#     Raises
-#     ------
-#     ValueError
-#         If `threshold` is not between 0 and 1, or if `X_test` or `y_test` is None,
-#         or if the model is not fitted.
-#     """
-#     if not (0.0 <= threshold <= 1.0):
-#         raise ValueError("threshold must be between 0 and 1")
-
-#     if X_test is None or y_test is None:
-#         raise ValueError("X_test and y_test must not be None")
-
-#     _ensure_fitted(model)
-
-#     X_valid, y_valid = check_X_y(
-#         X_test,
-#         y_test,
-#         ensure_all_finite='allow-nan',
-#         accept_sparse=True
-#     )
-#     y_proba = model.predict_proba(X_valid)[:, 1]
-#     y_pred = (y_proba >= threshold).astype(int)
-
-#     report_str = classification_report(y_valid, y_pred)
-#     report_dict = classification_report(y_valid, y_pred, output_dict=True)
-
-#     logger.info("Classification Report:\n%s", report_str)
-
-#     report_df = pd.DataFrame(report_dict).transpose()
-#     report_df.index.name = "class"
-#     report_df = report_df.reset_index()
-#     return report_df
