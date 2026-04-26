@@ -1,0 +1,4 @@
+model_registry_options:
+  model_name: "calibrated_threshold_classifier"
+  champion_alias: "champion"
+  inference_pipeline_name: "churn_inference_pipeline"

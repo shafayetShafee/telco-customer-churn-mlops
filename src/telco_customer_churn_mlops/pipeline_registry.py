@@ -1,12 +1,17 @@
 """Project pipelines."""
 from __future__ import annotations
 
+import os
+
 from kedro.pipeline import Pipeline
 from kedro_mlflow.pipeline import pipeline_ml_factory
+from kedro.config import OmegaConfigLoader
+from kedro.framework.project import settings
 
 from telco_customer_churn_mlops.pipelines.etl_app.pipeline import create_etl_pipeline
 from telco_customer_churn_mlops.pipelines.ml_app.pipeline import create_ml_pipeline
 from telco_customer_churn_mlops.pipelines.user_app.pipeline import create_user_pipeline
+from telco_customer_churn_mlops.configs import ModelRegistryConfig
 
 
 def register_pipelines() -> dict[str, Pipeline]:
@@ -15,6 +20,18 @@ def register_pipelines() -> dict[str, Pipeline]:
     Returns:
         A mapping from pipeline names to ``Pipeline`` objects.
     """
+    env = os.environ.get("KEDRO_ENV", "local")
+    conf_loader = OmegaConfigLoader(conf_source=settings.CONF_SOURCE, env=env)
+    model_reg_params = conf_loader["parameters"].get("model_registry_options")
+
+    if model_reg_params is None:
+        raise KeyError(
+            "Missing 'model_registry_options' in parameters*.yml in `conf/` directory. "
+            "Please define `model_name`, `champion_alias`, and `inference_pipeline_name`."
+        )
+    
+    model_reg_config = ModelRegistryConfig.from_params(model_reg_params)
+
     etl_pipeline = create_etl_pipeline()
     ml_pipeline = create_ml_pipeline()
 
@@ -33,7 +50,7 @@ def register_pipelines() -> dict[str, Pipeline]:
         inference=inference_pipeline,
         input_name='future_infer_data',
         log_model_kwargs=dict(
-            name="churn_inference_pipeline",
+            name=model_reg_config.inference_pipeline_name,
             signature=None,
             registered_model_name=None
         )
