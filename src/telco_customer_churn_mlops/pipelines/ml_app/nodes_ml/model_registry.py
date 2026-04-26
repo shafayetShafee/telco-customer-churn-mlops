@@ -292,7 +292,7 @@ def register_model_if_champion(
         "always_replace" if always_replace else "evaluation",
     )
 
-    if current_champion_version.version:
+    if current_champion_version:
         client.set_model_version_tag(
             MODEL_NAME, current_champion_version.version, "candidate_type", "retired_champion"
         )
@@ -304,7 +304,7 @@ def register_model_if_champion(
 
     if current_champion_version:
         logger.info(
-            "Registered previous champion model — name: %s | version: %s | model_id: %s\n"
+            "Retiring previous champion model — name: %s | version: %s | model_id: %s\n"
             "(generated from run_id: %s )",
             current_champion_version.name,
             current_champion_version.version,
