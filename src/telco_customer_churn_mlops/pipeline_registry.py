@@ -24,7 +24,7 @@ def register_pipelines() -> dict[str, Pipeline]:
     ).only_nodes_with_tags('training')
 
     inference_pipeline = (
-        etl_pipeline 
+        etl_pipeline
         + ml_pipeline
     ).only_nodes_with_tags('inference')
 
@@ -45,7 +45,7 @@ def register_pipelines() -> dict[str, Pipeline]:
         "etl": etl_pipeline,
         "train": training_pipeline_ml,
         "user": user_pipeline,
-        "__default__": etl_pipeline 
+        "__default__": etl_pipeline
         + training_pipeline + user_pipeline
     }
     return pipelines
