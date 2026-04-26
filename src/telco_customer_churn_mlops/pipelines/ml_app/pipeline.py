@@ -2,37 +2,22 @@
 Kedro ML app pipeline
 """
 
-from kedro.pipeline import Node, Pipeline  # noqa
-from .nodes_ml.split_data import (
-    train_calib_test_split_data
-)
-from .nodes_ml.hyperparameter_tuning import tune_xgb_pr_auc
+from kedro.pipeline import Node, Pipeline
+
 from .nodes_ml.calibration import (
     calibrate_fitted_classifer,
-    plot_calibration_comparison
+    plot_calibration_comparison,
 )
-from .nodes_ml.threshold_tuning import (
-    tune_threshold,
-    plot_threshold_metrics
-)
-
-from .nodes_ml.log_model import (
-    log_calibrated_model
-)
-
+from .nodes_ml.hyperparameter_tuning import tune_xgb_pr_auc
+from .nodes_ml.log_model import log_calibrated_model
 from .nodes_ml.model_registry import (
     evaluate_challenger_vs_champion,
-    register_model_if_champion
+    register_model_if_champion,
 )
+from .nodes_ml.predict import infer_from_model
+from .nodes_ml.split_data import train_calib_test_split_data
+from .nodes_ml.threshold_tuning import plot_threshold_metrics, tune_threshold
 
-# from .nodes_ml.model_train import (
-#     fit_calibrated_final_model,
-#     evaluate_model
-# )
-
-from .nodes_ml.predict import (
-    infer_from_model
-)
 
 def create_ml_pipeline(**kwargs) -> Pipeline:
     training_pipeline = Pipeline(
@@ -111,17 +96,6 @@ def create_ml_pipeline(**kwargs) -> Pipeline:
                 name="plot_calibration_diagram_node",
                 tags=["training"]
             ),
-            # Node(
-            #     func=evaluate_model,
-            #     inputs=[
-            #         "calibrated_model",
-            #         "X_test", "y_test",
-            #         "best_threshold"
-            #     ],
-            #     outputs="classification_report_df",
-            #     name="model_evaluate_node",
-            #     tags=["training"]
-            # ),
             Node(
                 func=log_calibrated_model,
                 inputs=[
@@ -140,8 +114,8 @@ def create_ml_pipeline(**kwargs) -> Pipeline:
                 func=evaluate_challenger_vs_champion,
                 inputs=[
                     "logged_model_info",
-                    "X_test", 
-                    "y_test", 
+                    "X_test",
+                    "y_test",
                     "params:mlflow_evaluate_options"
                 ],
                 outputs="challenger_beats_champion",
@@ -173,12 +147,9 @@ def create_ml_pipeline(**kwargs) -> Pipeline:
                 ],
                 outputs="inference_result",
                 name="infer_from_model_node",
-                tags=["inference"] 
+                tags=["inference"]
             )
         ]
     )
 
-    return (
-        training_pipeline 
-+  inference_pipeline 
-    )
+    return training_pipeline + inference_pipeline
