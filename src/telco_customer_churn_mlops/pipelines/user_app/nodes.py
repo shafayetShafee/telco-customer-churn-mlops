@@ -1,7 +1,7 @@
 import logging
 
-import pandas as pd
 import mlflow
+import pandas as pd
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +34,7 @@ def serve_predictions(
             "No versions found for registered model 'churn_inference_pipeline'. "
             "Ensure the training pipeline has been run at least once."
         )
-    
+
     latest_version = max(versions, key=lambda mv: int(mv.version))
 
     logger.info(
