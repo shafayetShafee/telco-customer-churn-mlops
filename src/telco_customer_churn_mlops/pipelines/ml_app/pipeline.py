@@ -116,7 +116,8 @@ def create_ml_pipeline(**kwargs) -> Pipeline:
                     "logged_model_info",
                     "X_test",
                     "y_test",
-                    "params:mlflow_evaluate_options"
+                    "params:mlflow_evaluate_options",
+                    "params:model_registry_options"
                 ],
                 outputs="challenger_beats_champion",
                 name="model_evaluation_node",
@@ -127,7 +128,7 @@ def create_ml_pipeline(**kwargs) -> Pipeline:
                 inputs=[
                     "logged_model_info",
                     "challenger_beats_champion",
-                    "params:registry_options"
+                    "params:model_registry_options"
                 ],
                 outputs="registered_model_version",
                 name="model_registration_node",

@@ -14,35 +14,27 @@ from sklearn.metrics import (
     roc_auc_score,
 )
 
+from telco_customer_churn_mlops.configs import (
+    MlflowEvaluateConfig,
+    ModelRegistryConfig,
+)
+
 logger = logging.getLogger(__name__)
 
-MODEL_NAME = "calibrated_threshold_classifier"
-CHAMPION_ALIAS = "champion"
 
-
-def _get_champion_run_id() -> str | None:
-    """
-    Fetch the current champion's run_id from the MLflow model registry.
-    Returns None if no champion is registered yet.
-    """
-    client = mlflow.MlflowClient()
-    try:
-        mv = client.get_model_version_by_alias(MODEL_NAME, CHAMPION_ALIAS)
-        logger.info("Current champion: version %s (run: %s)", mv.version, mv.run_id)
-        return mv.run_id
-    except MlflowException:
-        logger.info("No champion registered yet.")
-        return None
-
-
-def _get_champion_version() -> str | None:
+def _get_champion_version(config: ModelRegistryConfig) -> ModelVersion | None:
     """
     Fetch the current champion's model version from the MLflow model registry.
     Returns None if no champion is registered yet.
+
+    Parameters
+    ----------
+    config: ModelRegistryConfig
+        A ModelRegistryConfig pydantic model containing model_name and champion_alias.
     """
     client = mlflow.MlflowClient()
     try:
-        mv = client.get_model_version_by_alias(MODEL_NAME, CHAMPION_ALIAS)
+        mv = client.get_model_version_by_alias(config.model_name, config.champion_alias)
         return mv
     except MlflowException:
         logger.info("No champion registered yet.")
@@ -85,20 +77,15 @@ def _evaluate_on_predictions(
 
         prediction_proba = model.unwrap_python_model().predict_proba(X_test)[:, 1]
 
-        mlflow.log_metrics({
-            "precision_recall_auc": average_precision_score(
-                y_true=y_test,
-                y_score=prediction_proba
-            ),
-            "roc_auc": roc_auc_score(
-                y_true=y_test,
-                y_score=prediction_proba
-            ),
-            "log_loss": log_loss(
-                y_true=y_test,
-                y_pred=prediction_proba
-            ),
-        })
+        mlflow.log_metrics(
+            {
+                "precision_recall_auc": average_precision_score(
+                    y_true=y_test, y_score=prediction_proba
+                ),
+                "roc_auc": roc_auc_score(y_true=y_test, y_score=prediction_proba),
+                "log_loss": log_loss(y_true=y_test, y_pred=prediction_proba),
+            }
+        )
 
         return mlflow.models.evaluate(
             model=model,
@@ -112,7 +99,7 @@ def _evaluate_on_predictions(
                 # "log_explainer": False,
                 # "explainer_type": "permutation",
                 # "log_metrics_with_dataset_info": False
-            }
+            },
         )
 
 
@@ -121,6 +108,7 @@ def evaluate_challenger_vs_champion(
     X_test: pd.DataFrame,
     y_test: pd.Series,
     mlflow_evaluate_options: dict,
+    model_registry_options: dict,
 ) -> bool:
     """
     Evaluate the challenger (logged in the current MLflow run) against the
@@ -139,15 +127,10 @@ def evaluate_challenger_vs_champion(
         Held-out test labels.
 
     mlflow_evaluate_options : dict
-        Evaluation configuration:
-            - target (str): name of the target column, default "churn"
-            - eval_metric (str): metric to compare on, default "recall_score"
-            - eval_metric_threshold (float): minimum acceptable metric value,
-              default 0.8
-            - min_absolute_change (float): minimum absolute improvement
-              required over champion, default 0.05
-            - min_relative_change (float): minimum relative improvement
-              required over champion, default 0.05
+        Evaluation configuration, see MlflowEvaluateConfig for fields.
+
+    model_registry_options : dict
+        Model registry configuration, see ModelRegistryConfig for fields.
 
     Returns
     -------
@@ -155,61 +138,51 @@ def evaluate_challenger_vs_champion(
         True if the challenger beats (or matches) the champion, or if no
         champion exists (first run). False if the champion is still better.
     """
-    target = mlflow_evaluate_options.get("target", "churn")
-    eval_metric = mlflow_evaluate_options.get("eval_metric", "recall_score")
-    eval_metric_threshold = mlflow_evaluate_options.get("eval_metric_threshold", 0.8)
-    min_absolute_change = mlflow_evaluate_options.get("min_absolute_change", 0.05)
-    min_relative_change = mlflow_evaluate_options.get("min_relative_change", 0.05)
+    eval_cfg = MlflowEvaluateConfig.from_params(mlflow_evaluate_options)
+    reg_cfg = ModelRegistryConfig.from_params(model_registry_options)
 
     logger.info("Challenger model ID: %s", challenger_model_info.model_id)
     logger.info("Challenger model run ID: %s", challenger_model_info.run_id)
 
     challenger_model = mlflow.pyfunc.load_model(
-        model_uri=challenger_model_info.model_uri,
-        suppress_warnings=True
+        model_uri=challenger_model_info.model_uri, suppress_warnings=True
     )
     challenger_result = _evaluate_on_predictions(
-        model=challenger_model,
-        X_test=X_test,
-        y_test=y_test,
-        target=target
+        model=challenger_model, X_test=X_test, y_test=y_test, target=eval_cfg.target
     )
 
     logger.info(
         "Challenger %s: %.4f",
-        eval_metric,
-        challenger_result.metrics[eval_metric],
+        eval_cfg.eval_metric,
+        challenger_result.metrics[eval_cfg.eval_metric],
     )
 
-    champion_run_id = _get_champion_run_id()
-    if not champion_run_id:
+    champion_version = _get_champion_version(reg_cfg)
+    if not champion_version:
         logger.info("No champion found — challenger wins by default (first run).")
         return True
 
-    logger.info("Champion model run ID: %s", champion_run_id)
+    logger.info("Champion model run ID: %s", champion_version.run_id)
 
     champion_model = mlflow.pyfunc.load_model(
-        model_uri=f"models:/{MODEL_NAME}@{CHAMPION_ALIAS}",
-        suppress_warnings=True
+        model_uri=f"models:/{reg_cfg.model_name}@{reg_cfg.champion_alias}",
+        suppress_warnings=True,
     )
     champion_result = _evaluate_on_predictions(
-        model=champion_model,
-        X_test=X_test,
-        y_test=y_test,
-        target=target
+        model=champion_model, X_test=X_test, y_test=y_test, target=eval_cfg.target
     )
 
     logger.info(
         "Champion %s: %.4f",
-        eval_metric,
-        champion_result.metrics[eval_metric],
+        eval_cfg.eval_metric,
+        champion_result.metrics[eval_cfg.eval_metric],
     )
 
     thresholds = {
-        eval_metric: MetricThreshold(
-            threshold=eval_metric_threshold,
-            min_absolute_change=min_absolute_change,
-            min_relative_change=min_relative_change,
+        eval_cfg.eval_metric: MetricThreshold(
+            threshold=eval_cfg.eval_metric_threshold,
+            min_absolute_change=eval_cfg.min_absolute_change,
+            min_relative_change=eval_cfg.min_relative_change,
             greater_is_better=True,
         )
     }
@@ -248,11 +221,7 @@ def register_model_if_champion(
         is promoted to champion.
 
     registry_options : dict
-        Registry configuration:
-            - always_replace (bool): promote regardless of evaluation result,
-              default False
-            - eval_metric (str): logged as a tag on the registered model
-              version, default "recall_score"
+        Registry configuration, see ModelRegistryConfig for fields.
 
     Returns
     -------
@@ -266,12 +235,11 @@ def register_model_if_champion(
     RuntimeError
         If called outside an active MLflow run.
     """
-    always_replace = registry_options.get("always_replace", False)
-    eval_metric = registry_options.get("eval_metric", "recall_score")
+    reg_cfg = ModelRegistryConfig.from_params(registry_options)
 
-    current_champion_version = _get_champion_version()
+    current_champion_version = _get_champion_version(reg_cfg)
 
-    if not (challenger_beats_champion or always_replace):
+    if not (challenger_beats_champion or reg_cfg.always_replace):
         logger.info(
             "Challenger did not beat champion and always_replace=False — skipping registration."
         )
@@ -279,27 +247,42 @@ def register_model_if_champion(
 
     client = mlflow.MlflowClient()
     mv = mlflow.register_model(
-        model_uri=challenger_model_info.model_uri,
-        name=MODEL_NAME
+        model_uri=challenger_model_info.model_uri, name=reg_cfg.model_name
     )
 
-    client.set_model_version_tag(MODEL_NAME, mv.version, "candidate_type", "champion")
-    client.set_model_version_tag(MODEL_NAME, mv.version, "deployment_status", "production")
-    client.set_model_version_tag(MODEL_NAME, mv.version, "eval_metric", eval_metric)
     client.set_model_version_tag(
-        MODEL_NAME, mv.version, "promoted_by",
-        "always_replace" if always_replace else "evaluation",
+        reg_cfg.model_name, mv.version, "candidate_type", "champion"
+    )
+    client.set_model_version_tag(
+        reg_cfg.model_name, mv.version, "deployment_status", "production"
+    )
+    client.set_model_version_tag(
+        reg_cfg.model_name, mv.version, "eval_metric", reg_cfg.eval_metric
+    )
+    client.set_model_version_tag(
+        reg_cfg.model_name,
+        mv.version,
+        "promoted_by",
+        "always_replace" if reg_cfg.always_replace else "evaluation",
     )
 
     if current_champion_version:
         client.set_model_version_tag(
-            MODEL_NAME, current_champion_version.version, "candidate_type", "retired_champion"
+            reg_cfg.model_name,
+            current_champion_version.version,
+            "candidate_type",
+            "retired_champion",
         )
         client.set_model_version_tag(
-            MODEL_NAME, current_champion_version.version, "deployment_status", "retired"
+            reg_cfg.model_name,
+            current_champion_version.version,
+            "deployment_status",
+            "retired",
         )
 
-    client.set_registered_model_alias(MODEL_NAME, CHAMPION_ALIAS, mv.version)
+    client.set_registered_model_alias(
+        reg_cfg.model_name, reg_cfg.champion_alias, mv.version
+    )
 
     if current_champion_version:
         logger.info(
@@ -318,7 +301,7 @@ def register_model_if_champion(
         mv.version,
         mv.model_id,
         mv.run_id,
-        challenger_model_info.run_id
+        challenger_model_info.run_id,
     )
 
     return mv
