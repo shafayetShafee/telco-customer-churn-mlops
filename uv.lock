@@ -9,7 +9,7 @@ resolution-markers = [
 ]
 
 [options]
-exclude-newer = "2026-04-19T19:19:39.688885Z"
+exclude-newer = "2026-04-20T08:40:35.669733Z"
 exclude-newer-span = "P1W"
 
 [[package]]
@@ -4347,6 +4347,7 @@ dependencies = [
     { name = "pydantic" },
     { name = "scikit-learn" },
     { name = "shap" },
+    { name = "typing-extensions" },
     { name = "xgboost" },
 ]
 
@@ -4381,6 +4382,7 @@ requires-dist = [
     { name = "ruff", marker = "extra == 'dev'", specifier = "~=0.15.0" },
     { name = "scikit-learn", specifier = "~=1.7.0" },
     { name = "shap", specifier = "==0.49.1" },
+    { name = "typing-extensions", specifier = "==4.15.0" },
     { name = "wheel", marker = "extra == 'dev'", specifier = "~=0.46.3" },
     { name = "xgboost", specifier = "~=3.2.0" },
 ]

@@ -13,16 +13,12 @@ prefit_calib_options:
   inductive: False
   random_state: ${globals:random_state}
 
-min_recall: 0.80
-
-
 mlflow_evaluate_options:
   target: "${globals:target}"
   eval_metric: "${globals:eval_metric}"
   eval_metric_threshold: 0.8
   min_absolute_change: 0.05
   min_relative_change: 0.05
-
 
 inference_options:
   prediction_col: "${globals:target}_prediction"

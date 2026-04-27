@@ -66,7 +66,7 @@ def create_ml_pipeline(**kwargs) -> Pipeline:
                 inputs=[
                     "calibrated_model",
                     "X_calib", "y_calib",
-                    "params:min_recall"
+                    "params:mlflow_evaluate_options"
                 ],
                 outputs=[
                     "tuning_threshold_df",
@@ -101,7 +101,8 @@ def create_ml_pipeline(**kwargs) -> Pipeline:
                 inputs=[
                     "X_test",
                     "calibrated_model",
-                    "best_threshold"
+                    "best_threshold",
+                    "params:model_registry_options"
                 ],
                 outputs=[
                     "calibrated_threshold_classifier",

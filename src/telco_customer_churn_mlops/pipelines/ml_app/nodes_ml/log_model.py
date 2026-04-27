@@ -6,6 +6,7 @@ import pandas as pd
 from mapie.calibration import VennAbersCalibrator
 from mlflow.models import infer_signature
 
+from telco_customer_churn_mlops.configs import ModelRegistryConfig
 from .utils import _ensure_fitted
 
 logger = logging.getLogger(__name__)
@@ -81,7 +82,8 @@ class ThresholdClassifier(mlflow.pyfunc.PythonModel):
 def log_calibrated_model(
     X: np.ndarray | pd.DataFrame,
     model: VennAbersCalibrator,
-    threshold: float
+    threshold: float,
+    model_registry_options: dict,
 ) -> ThresholdClassifier:
     """
     Wrap a calibrated model in a ThresholdClassifier and log it to MLflow.
@@ -95,12 +97,17 @@ def log_calibrated_model(
     X : np.ndarray or pd.DataFrame
         Input features used to infer the MLflow model signature and generate
         sample predictions. Only the first 5 rows are used.
+
     model : VennAbersCalibrator
         A fitted Venn-Abers calibrated classifier. Must be already fitted;
         a NotFittedError will be raised otherwise.
+
     threshold : float
         Decision threshold for converting probabilities into class predictions.
         Must be in the range [0.0, 1.0].
+
+    model_registry_options : dict
+        Model registry configuration, see ModelRegistryConfig for fields.
 
     Returns
     -------
@@ -131,8 +138,11 @@ def log_calibrated_model(
         model_output=sample_predictions
     )
 
+    model_log_cfg = ModelRegistryConfig.from_params(model_registry_options)
+    model_name = model_log_cfg.model_name
+
     logged_model_info = mlflow.pyfunc.log_model(
-        name="calibrated_threshold_classifier",
+        name=model_name,
         python_model=threshold_classifier,
         signature=model_signature,
         input_example=sample_input,

@@ -7,6 +7,7 @@ from sklearn.base import ClassifierMixin
 from sklearn.calibration import CalibrationDisplay
 from sklearn.utils.validation import check_X_y
 
+from telco_customer_churn_mlops.configs import PrefitCalibConfig
 from .utils import _ensure_fitted
 
 
@@ -42,6 +43,8 @@ def calibrate_fitted_classifer(
             - random_state : int, default=1071
                 Random seed for reproducibility.
 
+        Validated using PrefitCalibConfig.
+
     Returns
     -------
     VennAbersCalibrator
@@ -52,9 +55,10 @@ def calibrate_fitted_classifer(
     ValueError
         If the input model is not fitted.
     """
-    cv = calib_options.get("cv", "prefit")
-    inductive = calib_options.get("inductive", False)
-    random_state = calib_options.get("random_state", 1071)
+    calib_cfg = PrefitCalibConfig.from_params(calib_options)
+    cv = calib_cfg.cv
+    inductive = calib_cfg.inductive
+    random_state = calib_cfg.random_state
 
     _ensure_fitted(model)
 

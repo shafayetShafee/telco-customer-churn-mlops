@@ -16,6 +16,8 @@ from sklearn.metrics import (
     recall_score,
 )
 
+from telco_customer_churn_mlops.configs import MlflowEvaluateConfig
+
 from .utils import _ensure_fitted
 
 
@@ -25,7 +27,7 @@ def _evaluate_thresholds(
     y: np.ndarray | pd.Series,
     *,
     thresholds: Iterable[float] | None = None,
-    **kwargs: Any
+    **kwargs: Any,
 ) -> pd.DataFrame:
     """
     Evaluate classification performance across multiple decision thresholds.
@@ -119,24 +121,28 @@ def _evaluate_thresholds(
         fpr = fp / (fp + tn) if (fp + tn) > 0 else 0.0
         tpr = tp / (tp + fn) if (tp + fn) > 0 else 0.0
 
-        results.append({
-            "threshold": float(t),
-            "precision": precision_score(y, y_pred, pos_label=pos_label, zero_division=zero_division),
-            "recall": recall_score(y, y_pred, pos_label=pos_label, zero_division=zero_division),
-            "f1": f1_score(y, y_pred, pos_label=pos_label, zero_division=zero_division),
-            "tpr": tpr,
-            "fpr": fpr,
-            "accuracy": accuracy_score(y, y_pred),
-        })
+        results.append(
+            {
+                "threshold": float(t),
+                "precision": precision_score(
+                    y, y_pred, pos_label=pos_label, zero_division=zero_division
+                ),
+                "recall": recall_score(
+                    y, y_pred, pos_label=pos_label, zero_division=zero_division
+                ),
+                "f1": f1_score(
+                    y, y_pred, pos_label=pos_label, zero_division=zero_division
+                ),
+                "tpr": tpr,
+                "fpr": fpr,
+                "accuracy": accuracy_score(y, y_pred),
+            }
+        )
 
     return pd.DataFrame(results)
 
 
-
-def _select_threshold_by_recall(
-    df: pd.DataFrame,
-    min_recall: float = 0.8
-) -> float:
+def _select_threshold_by_recall(df: pd.DataFrame, min_recall: float = 0.8) -> float:
     """
     Select an optimal decision threshold based on a minimum recall constraint.
 
@@ -177,12 +183,11 @@ def _select_threshold_by_recall(
     return float(best_row["threshold"])
 
 
-
 def tune_threshold(
     model: ClassifierMixin | VennAbersCalibrator,
     X_calib: pd.DataFrame | np.ndarray,
     y_calib: pd.Series | np.ndarray,
-    min_recall: float
+    mlflow_evaluate_options: dict,
 ) -> tuple[pd.DataFrame, float]:
     """
     Evaluate model performance across probability thresholds and select an
@@ -210,9 +215,8 @@ def tune_threshold(
     y_calib : Union[pd.Series, np.ndarray]
         True labels corresponding to `X_calib`.
 
-    min_recall : float
-        Minimum recall constraint for selecting the optimal threshold.
-        Must be between 0 and 1 (inclusive).
+    mlflow_evaluate_options : dict
+        Evaluation configuration, see MlflowEvaluateConfig for fields.
 
     Returns
     -------
@@ -224,7 +228,7 @@ def tune_threshold(
     Raises
     ------
     ValueError
-        If `min_recall` is not between 0 and 1.
+        If `mlflow_evaluate_options.eval_metric_threshold` is not between 0 and 1.
 
     ValueError
         If threshold evaluation returns an empty DataFrame.
@@ -235,6 +239,9 @@ def tune_threshold(
     - For calibrated models (e.g., Venn-Abers), threshold tuning should
       typically be performed after calibration.
     """
+    eval_cfg = MlflowEvaluateConfig.from_params(mlflow_evaluate_options)
+    min_recall = eval_cfg.eval_metric_threshold
+
     if not (0.0 <= min_recall <= 1.0):
         raise ValueError("min_recall must be between 0 and 1")
 
@@ -250,11 +257,10 @@ def tune_threshold(
     return df, best_threshold
 
 
-
 def plot_threshold_metrics(
     df: pd.DataFrame,
     best_threshold: float | None = None,
-    title: str | None = "Threshold Tuning Metrics"
+    title: str | None = "Threshold Tuning Metrics",
 ) -> Figure:
     """
     Generate a publication-quality plot of classification metrics across thresholds.
@@ -296,7 +302,7 @@ def plot_threshold_metrics(
             x=best_threshold,
             linestyle="--",
             linewidth=2,
-            label=f"Selected Threshold ({best_threshold:.2f})"
+            label=f"Selected Threshold ({best_threshold:.2f})",
         )
 
     ax.set_title(title, fontsize=14, fontweight="bold")
@@ -305,11 +311,7 @@ def plot_threshold_metrics(
     ax.set_xlim(0.0, 1.0)
     ax.set_ylim(0.0, 1.05)
     ax.grid(True, linestyle="--", alpha=0.6)
-    ax.legend(
-        title="Metrics",
-        loc="best",
-        frameon=True
-    )
+    ax.legend(title="Metrics", loc="best", frameon=True)
     fig.tight_layout()
     plt.close(fig)
     return fig

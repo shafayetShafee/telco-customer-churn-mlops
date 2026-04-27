@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 from mlflow.entities.model_registry import ModelVersion
 
+from telco_customer_churn_mlops.configs import InferenceConfig
 from .log_model import ThresholdClassifier
 
 logger = logging.getLogger(__name__)
@@ -51,8 +52,9 @@ def infer_from_model(
             - ``churn_probability`` (float): calibrated positive-class
               probability from the underlying Venn-Abers calibrator.
     """
-    target_col = inference_options.get("prediction_col", "churn_prediction")
-    proba_col = inference_options.get("proba_col", "churn_probability")
+    infer_cfg = InferenceConfig.from_params(inference_options)
+    pred_col = infer_cfg.prediction_col
+    proba_col = infer_cfg.proba_col
 
     if isinstance(processed_infer_data, np.ndarray):
         infer_df = pd.DataFrame(processed_infer_data)
@@ -79,7 +81,7 @@ def infer_from_model(
 
     return infer_df.assign(
         **{
-            target_col: predictions,
+            pred_col: predictions,
             proba_col: probabilities,
         }
     )

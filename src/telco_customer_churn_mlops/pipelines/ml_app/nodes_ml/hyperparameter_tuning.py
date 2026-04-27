@@ -7,6 +7,8 @@ from optuna_integration import OptunaSearchCV
 from sklearn.metrics import average_precision_score, make_scorer
 from xgboost import XGBClassifier
 
+from telco_customer_churn_mlops.configs import OptunaConfig
+
 
 def tune_xgb_pr_auc(
     X_train: pd.DataFrame,
@@ -21,10 +23,13 @@ def tune_xgb_pr_auc(
     ----------
     X_train : pd.DataFrame
         Training feature matrix.
+
     y_train : pd.Series or pd.DataFrame
         Training target values.
+
     optuna_options : dict
-        Dictionary of Optuna configuration options. Expected keys include:
+        Dictionary of Optuna configuration options. Validated using OptunaConfig.
+        Expected keys include:
         - 'n_trials' : int
             Number of Optuna trials.
         - 'random_state' : int
@@ -74,13 +79,15 @@ def tune_xgb_pr_auc(
         response_method="predict_proba"
     )
 
+    optuna_cfg = OptunaConfig.from_params(optuna_options)
+
     optuna_search = OptunaSearchCV(
         estimator=xgb_clf,
         param_distributions=param_distributions,
-        n_trials=optuna_options.get("n_trials", 50),
-        cv=optuna_options.get("cv", 3),
+        n_trials=optuna_cfg.n_trials,
+        cv=optuna_cfg.cv,
         scoring=pr_auc_scorer,
-        random_state=optuna_options.get("random_state", 42),
+        random_state=optuna_cfg.random_state,
         verbose=1
     )
 
