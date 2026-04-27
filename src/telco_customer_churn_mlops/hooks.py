@@ -7,11 +7,9 @@ from kedro.io import DataCatalog
 from mlflow import MlflowClient
 from mlflow.exceptions import MlflowException
 
-logger = logging.getLogger(__name__)
+from telco_customer_churn_mlops.configs import ModelRegistryConfig
 
-INFERENCE_PIPELINE_NAME = "churn_inference_pipeline"
-MODEL_NAME = "calibrated_threshold_classifier"
-CHAMPION_ALIAS = "champion"
+logger = logging.getLogger(__name__)
 
 
 class InferencePipelineRegistrationHook:
@@ -79,10 +77,19 @@ class InferencePipelineRegistrationHook:
             )
             return None
 
-        self._register_inference_pipeline()
+        model_reg_params = catalog.load('params:model_registry_options')
+        model_reg_cfg = ModelRegistryConfig.from_params(model_reg_params)
 
-    def _register_inference_pipeline(self) -> None:
+        self._register_inference_pipeline(model_reg_cfg)
+
+    def _register_inference_pipeline(self, config: ModelRegistryConfig) -> None:
         """
+        Parameters
+        ----------
+        config: ModelRegistryConfig
+            A ModelRegistryConfig pydantic model containing model registry
+            configurations.
+
         Register the logged churn inference pipeline artifact to the MLflow
         Model Registry and tag it with the current champion model version.
 
@@ -102,18 +109,18 @@ class InferencePipelineRegistrationHook:
 
         try:
             champion_model_version = client.get_model_version_by_alias(
-                MODEL_NAME, CHAMPION_ALIAS
+                config.model_name, config.champion_alias
             )
         except MlflowException:
             logger.warning(
                 "No champion model registered under alias '%s' — "
                 "skipping inference pipeline registration.",
-                CHAMPION_ALIAS,
+                config.champion_alias,
             )
             return None
 
         run_id = active_run.info.run_id
-        model_uri = f"runs:/{run_id}/{INFERENCE_PIPELINE_NAME}"
+        model_uri = f"runs:/{run_id}/{config.inference_pipeline_name}"
 
         logger.info(
             "Registering churn inference pipeline from run %s", run_id
@@ -122,20 +129,20 @@ class InferencePipelineRegistrationHook:
         try:
             mv = mlflow.register_model(
                 model_uri=model_uri,
-                name=INFERENCE_PIPELINE_NAME,
+                name=config.inference_pipeline_name,
             )
         except MlflowException as e:
             logger.error("Failed to register inference pipeline: %s", e)
             return None
 
         client.set_model_version_tag(
-            INFERENCE_PIPELINE_NAME,
+            config.inference_pipeline_name,
             mv.version,
             "champion_model_version",
             champion_model_version.version,
         )
         client.set_registered_model_alias(
-            INFERENCE_PIPELINE_NAME, CHAMPION_ALIAS, mv.version
+            config.inference_pipeline_name, config.champion_alias, mv.version
         )
 
         logger.info(
