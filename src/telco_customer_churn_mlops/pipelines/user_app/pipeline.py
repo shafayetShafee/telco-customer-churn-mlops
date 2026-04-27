@@ -13,7 +13,7 @@ def create_user_pipeline(**kwargs) -> Pipeline:
         [
             Node(
                 func=serve_predictions,
-                inputs=["telco_future"],
+                inputs=["telco_future", "params:model_registry_options"],
                 outputs="served_predictions",
                 name="serving_predictions_node",
                 tags=["user"]

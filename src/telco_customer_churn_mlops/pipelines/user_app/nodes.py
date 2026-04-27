@@ -3,11 +3,14 @@ import logging
 import mlflow
 import pandas as pd
 
+from telco_customer_churn_mlops.configs import ModelRegistryConfig
+
 logger = logging.getLogger(__name__)
 
 
 def serve_predictions(
-    raw_new_data: pd.DataFrame
+    raw_new_data: pd.DataFrame,
+    model_registry_options: dict,
 ) -> pd.DataFrame:
     """
     Load the latest registered version of the churn inference pipeline
@@ -20,25 +23,32 @@ def serve_predictions(
         training data before preprocessing — the inference pipeline handles
         all preprocessing internally.
 
+    model_registry_options : dict
+        Model registry configurations. Used to load the inference pipeline from 
+        Mlflow model registry. See ModelRegistryConfig for fields.
+
     Returns
     -------
     pd.DataFrame
         Prediction results containing binary churn predictions and
         calibrated churn probabilities.
     """
+    registry_cfg = ModelRegistryConfig.from_params(model_registry_options)
+    inference_pipeline_name = registry_cfg.inference_pipeline_name
+
     client = mlflow.MlflowClient()
-    versions = client.search_model_versions("name='churn_inference_pipeline'")
+    versions = client.search_model_versions(f"name='{inference_pipeline_name}'")
 
     if not versions:
         raise RuntimeError(
-            "No versions found for registered model 'churn_inference_pipeline'. "
+            f"No versions found for registered model '{inference_pipeline_name}'. "
             "Ensure the training pipeline has been run at least once."
         )
 
     latest_version = max(versions, key=lambda mv: int(mv.version))
 
     logger.info(
-        "Loading churn inference pipeline — version: %s | model_uri: %s\n"
+        "Loading the inference pipeline — version: %s | model_uri: %s\n"
         "run_id: %s",
         latest_version.version,
         latest_version.source,
