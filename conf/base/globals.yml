@@ -1,0 +1,3 @@
+target: "churn"
+random_state: 1070
+eval_metric: "recall_score"

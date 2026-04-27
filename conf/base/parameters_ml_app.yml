@@ -1,32 +1,29 @@
 split_options:
   test_size: 0.15
   calib_size: 0.15
-  random_state: 1070
+  random_state: ${globals:random_state}
   
 optuna_options:
   cv: 2
   n_trials: 2
-  random_state: 1070
+  random_state: ${globals:random_state}
 
 prefit_calib_options:
   cv: "prefit"
   inductive: False
-  random_state: 1070
+  random_state: ${globals:random_state}
 
 min_recall: 0.80
 
-# cvap_calib_options:
-#   n_splits: 5
-#   random_state: 1070
 
 mlflow_evaluate_options:
-  target: "churn"
-  eval_metric: "recall_score"
+  target: "${globals:target}"
+  eval_metric: "${globals:eval_metric}"
   eval_metric_threshold: 0.8
   min_absolute_change: 0.05
   min_relative_change: 0.05
 
 
 inference_options:
-  prediction_col: "churn_prediction"
-  proba_col: "churn_probability"
+  prediction_col: "${globals:target}_prediction"
+  proba_col: "${globals:target}_probability"
