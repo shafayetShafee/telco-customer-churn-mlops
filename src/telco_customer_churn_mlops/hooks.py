@@ -77,7 +77,7 @@ class InferencePipelineRegistrationHook:
             )
             return None
 
-        model_reg_params = catalog.load('params:model_registry_options')
+        model_reg_params = catalog.load("params:model_registry_options")
         model_reg_cfg = ModelRegistryConfig.from_params(model_reg_params)
 
         self._register_inference_pipeline(model_reg_cfg)
@@ -122,9 +122,7 @@ class InferencePipelineRegistrationHook:
         run_id = active_run.info.run_id
         model_uri = f"runs:/{run_id}/{config.inference_pipeline_name}"
 
-        logger.info(
-            "Registering churn inference pipeline from run %s", run_id
-        )
+        logger.info("Registering churn inference pipeline from run %s", run_id)
 
         try:
             mv = mlflow.register_model(

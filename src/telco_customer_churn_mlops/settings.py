@@ -4,44 +4,6 @@ https://docs.kedro.org/en/stable/configure/configuration_basics/#configuration""
 
 from telco_customer_churn_mlops.hooks import InferencePipelineRegistrationHook
 
-# import mlflow
-# from kedro.framework.hooks import hook_impl
-# from kedro_mlflow.pipeline.pipeline_ml import PipelineML
-
-# class DebugHook:
-#     @hook_impl
-#     def after_pipeline_run(
-#         self,
-#         run_params: dict,
-#         pipeline,
-#         catalog,
-#         **kwargs,
-#     ) -> None:
-#         print("=" * 60)
-#         print("DEBUG HOOK FIRED — after_pipeline_run")
-#         print(f"pipeline_name : {run_params.get('pipeline_name')}")
-#         print(f"pipeline type : {type(pipeline)}")
-
-#         print(pipeline.outputs())
-#         print(f"Is PipelineML : {isinstance(pipeline, PipelineML)}")
-
-#         # check if challenger_beats_champion is accessible in catalog
-#         try:
-#             result = catalog.load("challenger_beats_champion")
-#             print(f"challenger_beats_champion : {result}")
-#         except Exception as e:
-#             print(f"challenger_beats_champion not in catalog : {e}")
-
-#         # check active mlflow run
-        
-#         active_run = mlflow.active_run()
-#         run_id = active_run.info.run_id
-#         model_uri = f"runs:/{run_id}/churn_inference_pipeline"
-#         inf_pipeline = mlflow.pyfunc.load_model(model_uri=model_uri)
-#         print(inf_pipeline)
-#         print(f"active MLflow run : {active_run.info.run_id if active_run else 'None'}")
-#         print("=" * 60)
-
 # Instantiated project hooks.
 # For example, after creating a hooks.py and defining a ProjectHooks class there, do
 # from telco_customer_churn_mlops.hooks import ProjectHooks
@@ -73,8 +35,8 @@ CONFIG_LOADER_ARGS = {
     "default_run_env": "local",
     "config_patterns": {
         "parameters": ["parameters*", "parameters*/**", "**/parameters*"],
-        "globals": ['globals.yml']
-    }
+        "globals": ["globals.yml"],
+    },
 }
 
 # Class that manages Kedro's library components.

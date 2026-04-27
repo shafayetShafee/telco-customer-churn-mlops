@@ -1,4 +1,3 @@
-"""telco-customer-churn-mlops
-"""
+"""telco-customer-churn-mlops"""
 
 __version__ = "0.1"

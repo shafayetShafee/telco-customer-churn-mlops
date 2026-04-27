@@ -40,7 +40,7 @@ class BaseConfig(BaseModel):
     @classmethod
     def from_params(cls, params: dict) -> Self:
         return cls(**params)
-    
+
 
 class SplitConfig(BaseConfig):
     test_size: ValidRatio = 0.15
@@ -89,5 +89,3 @@ class ModelRegistryConfig(BaseConfig):
 class InferenceConfig(BaseConfig):
     prediction_col: NonEmptyStr = "churn_prediction"
     proba_col: NonEmptyStr = "churn_probability"
-
-

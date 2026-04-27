@@ -11,9 +11,7 @@ from telco_customer_churn_mlops.configs import OptunaConfig
 
 
 def tune_xgb_pr_auc(
-    X_train: pd.DataFrame,
-    y_train: pd.Series | pd.DataFrame,
-    optuna_options: dict
+    X_train: pd.DataFrame, y_train: pd.Series | pd.DataFrame, optuna_options: dict
 ) -> tuple[XGBClassifier, dict[str, Any], OptunaSearchCV]:
     """
     Perform hyperparameter tuning for an XGBoost classifier using OptunaSearchCV,
@@ -71,12 +69,11 @@ def tune_xgb_pr_auc(
         random_state=optuna_options.get("random_state", 42),
         n_jobs=-1,
         scale_pos_weight=scale_pos_weight,
-        eval_metric="aucpr"
+        eval_metric="aucpr",
     )
 
     pr_auc_scorer = make_scorer(
-        average_precision_score,
-        response_method="predict_proba"
+        average_precision_score, response_method="predict_proba"
     )
 
     optuna_cfg = OptunaConfig.from_params(optuna_options)
@@ -88,7 +85,7 @@ def tune_xgb_pr_auc(
         cv=optuna_cfg.cv,
         scoring=pr_auc_scorer,
         random_state=optuna_cfg.random_state,
-        verbose=1
+        verbose=1,
     )
 
     optuna_search.fit(X_train, y_train)
@@ -99,7 +96,6 @@ def tune_xgb_pr_auc(
     mlflow.log_params(_sanitize(best_params))
 
     return best_model, best_params, optuna_search
-
 
 
 def _sanitize(params: dict) -> dict:
@@ -121,7 +117,4 @@ def _sanitize(params: dict) -> dict:
     Values exposing a `.item()` method (e.g., NumPy scalars) are converted
     using that method. Other values are returned unchanged.
     """
-    return {
-        k: (v.item() if hasattr(v, "item") else v)
-        for k, v in params.items()
-    }
+    return {k: (v.item() if hasattr(v, "item") else v) for k, v in params.items()}

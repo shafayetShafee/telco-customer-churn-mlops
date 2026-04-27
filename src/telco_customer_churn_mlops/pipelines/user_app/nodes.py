@@ -24,7 +24,7 @@ def serve_predictions(
         all preprocessing internally.
 
     model_registry_options : dict
-        Model registry configurations. Used to load the inference pipeline from 
+        Model registry configurations. Used to load the inference pipeline from
         Mlflow model registry. See ModelRegistryConfig for fields.
 
     Returns
@@ -48,8 +48,7 @@ def serve_predictions(
     latest_version = max(versions, key=lambda mv: int(mv.version))
 
     logger.info(
-        "Loading the inference pipeline — version: %s | model_uri: %s\n"
-        "run_id: %s",
+        "Loading the inference pipeline — version: %s | model_uri: %s\nrun_id: %s",
         latest_version.version,
         latest_version.source,
         latest_version.run_id,
@@ -61,4 +60,3 @@ def serve_predictions(
     )
 
     return inference_pipeline.predict(raw_new_data)
-

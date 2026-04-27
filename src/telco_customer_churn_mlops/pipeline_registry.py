@@ -27,9 +27,7 @@ def register_pipelines() -> dict[str, Pipeline]:
     """
     env = os.environ.get("KEDRO_ENV", "local")
     conf_loader = OmegaConfigLoader(
-        conf_source=settings.CONF_SOURCE,
-        env=env,
-        **settings.CONFIG_LOADER_ARGS
+        conf_source=settings.CONF_SOURCE, env=env, **settings.CONFIG_LOADER_ARGS
     )
     model_reg_params = conf_loader["parameters"].get("model_registry_options", {})
     model_reg_config = ModelRegistryConfig.from_params(model_reg_params)

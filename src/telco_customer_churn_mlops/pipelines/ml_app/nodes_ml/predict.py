@@ -6,6 +6,7 @@ import pandas as pd
 from mlflow.entities.model_registry import ModelVersion
 
 from telco_customer_churn_mlops.configs import InferenceConfig
+
 from .log_model import ThresholdClassifier
 
 logger = logging.getLogger(__name__)
@@ -67,7 +68,7 @@ def infer_from_model(
         registered_model_version.name,
         registered_model_version.version,
         registered_model_version.model_id,
-        registered_model_version.run_id
+        registered_model_version.run_id,
     )
 
     champion_model = mlflow.pyfunc.load_model(
@@ -76,7 +77,7 @@ def infer_from_model(
     )
     threshold_classifier: ThresholdClassifier = champion_model.unwrap_python_model()
 
-    predictions  = champion_model.predict(infer_df)
+    predictions = champion_model.predict(infer_df)
     probabilities = threshold_classifier.predict_proba(infer_df)[:, 1]
 
     return infer_df.assign(

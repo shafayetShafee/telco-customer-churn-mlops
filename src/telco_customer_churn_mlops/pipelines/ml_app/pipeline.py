@@ -27,74 +27,67 @@ def create_ml_pipeline(**kwargs) -> Pipeline:
                 inputs=[
                     "processed_train_data",
                     "processed_target_col",
-                    "params:split_options"
+                    "params:split_options",
                 ],
                 outputs=[
-                    "X_train", "X_calib", "X_test",
-                    "y_train", "y_calib", "y_test"
+                    "X_train",
+                    "X_calib",
+                    "X_test",
+                    "y_train",
+                    "y_calib",
+                    "y_test",
                 ],
                 name="data_split_node",
-                tags=["training"]
+                tags=["training"],
             ),
             Node(
                 func=tune_xgb_pr_auc,
                 inputs=[
-                    "X_train", "y_train",
+                    "X_train",
+                    "y_train",
                     "params:optuna_options",
                 ],
-                outputs=[
-                    "optuna_best_model",
-                    "optuna_best_params",
-                    "optuna_search"
-                ],
+                outputs=["optuna_best_model", "optuna_best_params", "optuna_search"],
                 name="hyperparameter_tuning_node",
-                tags=["training"]
+                tags=["training"],
             ),
             Node(
                 func=calibrate_fitted_classifer,
                 inputs=[
                     "optuna_best_model",
-                    "X_calib", "y_calib",
-                    "params:prefit_calib_options"
+                    "X_calib",
+                    "y_calib",
+                    "params:prefit_calib_options",
                 ],
                 outputs="calibrated_model",
                 name="calibrate_fitted_classifier_node",
-                tags=["training"]
+                tags=["training"],
             ),
             Node(
                 func=tune_threshold,
                 inputs=[
                     "calibrated_model",
-                    "X_calib", "y_calib",
-                    "params:mlflow_evaluate_options"
+                    "X_calib",
+                    "y_calib",
+                    "params:mlflow_evaluate_options",
                 ],
-                outputs=[
-                    "tuning_threshold_df",
-                    "best_threshold"
-                ],
+                outputs=["tuning_threshold_df", "best_threshold"],
                 name="threshold_tuning_node",
-                tags=["training"]
+                tags=["training"],
             ),
             Node(
                 func=plot_threshold_metrics,
-                inputs=[
-                    "tuning_threshold_df",
-                    "best_threshold"
-                ],
+                inputs=["tuning_threshold_df", "best_threshold"],
                 outputs="threshold_metrics_plot",
                 name="plot_threshold_metrics_node",
-                tags=["training"]
+                tags=["training"],
             ),
             Node(
                 func=plot_calibration_comparison,
-                inputs=[
-                    "optuna_best_model",
-                    "calibrated_model",
-                    "X_test", "y_test"
-                ],
+                inputs=["optuna_best_model", "calibrated_model", "X_test", "y_test"],
                 outputs="calibration_reliability_plot",
                 name="plot_calibration_diagram_node",
-                tags=["training"]
+                tags=["training"],
             ),
             Node(
                 func=log_calibrated_model,
@@ -102,14 +95,11 @@ def create_ml_pipeline(**kwargs) -> Pipeline:
                     "X_test",
                     "calibrated_model",
                     "best_threshold",
-                    "params:model_registry_options"
+                    "params:model_registry_options",
                 ],
-                outputs=[
-                    "calibrated_threshold_classifier",
-                    "logged_model_info"
-                ],
+                outputs=["calibrated_threshold_classifier", "logged_model_info"],
                 name="calibrated_model_logging_node",
-                tags=["training"]
+                tags=["training"],
             ),
             Node(
                 func=evaluate_challenger_vs_champion,
@@ -118,23 +108,23 @@ def create_ml_pipeline(**kwargs) -> Pipeline:
                     "X_test",
                     "y_test",
                     "params:mlflow_evaluate_options",
-                    "params:model_registry_options"
+                    "params:model_registry_options",
                 ],
                 outputs="challenger_beats_champion",
                 name="model_evaluation_node",
-                tags=["training"]
+                tags=["training"],
             ),
             Node(
                 func=register_model_if_champion,
                 inputs=[
                     "logged_model_info",
                     "challenger_beats_champion",
-                    "params:model_registry_options"
+                    "params:model_registry_options",
                 ],
                 outputs="registered_model_version",
                 name="model_registration_node",
-                tags=["training"]
-            )
+                tags=["training"],
+            ),
         ]
     )
 
@@ -145,13 +135,13 @@ def create_ml_pipeline(**kwargs) -> Pipeline:
                 inputs=[
                     "registered_model_version",
                     "processed_infer_data",
-                    "params:inference_options"
+                    "params:inference_options",
                 ],
                 outputs="inference_result",
                 name="infer_from_model_node",
-                tags=["inference"]
+                tags=["inference"],
             )
         ]
     )
 
-    return (training_pipeline + inference_pipeline)
+    return training_pipeline + inference_pipeline

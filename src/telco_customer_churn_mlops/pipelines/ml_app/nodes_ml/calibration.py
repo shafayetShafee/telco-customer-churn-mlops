@@ -8,6 +8,7 @@ from sklearn.calibration import CalibrationDisplay
 from sklearn.utils.validation import check_X_y
 
 from telco_customer_churn_mlops.configs import PrefitCalibConfig
+
 from .utils import _ensure_fitted
 
 
@@ -15,7 +16,7 @@ def calibrate_fitted_classifer(
     model: ClassifierMixin,
     X_calib: np.ndarray | pd.DataFrame,
     y_calib: np.ndarray | pd.Series,
-    calib_options: dict
+    calib_options: dict,
 ) -> VennAbersCalibrator:
     """
     Calibrate a pre-fitted classifier using Venn-Abers calibration.
@@ -63,23 +64,16 @@ def calibrate_fitted_classifer(
     _ensure_fitted(model)
 
     X_validated, y_validated = check_X_y(
-        X=X_calib,
-        y=y_calib,
-        ensure_all_finite='allow-nan',
-        accept_sparse=True
+        X=X_calib, y=y_calib, ensure_all_finite="allow-nan", accept_sparse=True
     )
 
     with np.errstate(all="ignore"):
         va_calibrator = VennAbersCalibrator(
-            estimator=model,
-            cv=cv,
-            inductive=inductive,
-            random_state=random_state
+            estimator=model, cv=cv, inductive=inductive, random_state=random_state
         )
         va_calibrator.fit(X_validated, y_validated)
 
     return va_calibrator
-
 
 
 def plot_calibration_comparison(

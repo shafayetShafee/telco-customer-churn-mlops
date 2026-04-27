@@ -26,8 +26,7 @@ def _ensure_fitted(model: ClassifierMixin | VennAbersCalibrator) -> None:
         "The model appears to be unfitted. Call `fit()` before using this function."
     """
     not_fitted_msg = (
-        "The model appears to be unfitted. "
-        "Call `fit()` before using this function."
+        "The model appears to be unfitted. Call `fit()` before using this function."
     )
 
     if hasattr(model, "is_fitted"):

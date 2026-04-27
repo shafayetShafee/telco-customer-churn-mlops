@@ -7,6 +7,7 @@ from mapie.calibration import VennAbersCalibrator
 from mlflow.models import infer_signature
 
 from telco_customer_churn_mlops.configs import ModelRegistryConfig
+
 from .utils import _ensure_fitted
 
 logger = logging.getLogger(__name__)
@@ -37,6 +38,7 @@ class ThresholdClassifier(mlflow.pyfunc.PythonModel):
         otherwise class 0.
 
     """
+
     def __init__(self, calibrator: VennAbersCalibrator, threshold: float) -> None:
         _ensure_fitted(calibrator)
         self.calibrator = calibrator
@@ -133,10 +135,7 @@ def log_calibrated_model(
     with np.errstate(all="ignore"):
         sample_predictions = threshold_classifier.predict(sample_input)
 
-    model_signature = infer_signature(
-        model_input=X,
-        model_output=sample_predictions
-    )
+    model_signature = infer_signature(model_input=X, model_output=sample_predictions)
 
     model_log_cfg = ModelRegistryConfig.from_params(model_registry_options)
     model_name = model_log_cfg.model_name
@@ -153,4 +152,3 @@ def log_calibrated_model(
     logger.info("Logged model run ID: %s", logged_model_info.run_id)
 
     return threshold_classifier, logged_model_info
-
