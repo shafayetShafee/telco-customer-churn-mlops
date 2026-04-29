@@ -246,6 +246,38 @@ logged_model_info:
     kedro-viz: 
       layer: final_model
 
+logged_explainer_info:
+  type: kedro.io.MemoryDataset
+  metadata: 
+    kedro-viz: 
+      layer: model_explanation
+
+bar_fig:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataset
+  dataset:
+    type: matplotlib.MatplotlibDataset
+    filepath: data/07_model_output/shap_barplot.png
+    save_args:
+      format: png
+      dpi: 300
+      bbox_inches: tight
+  metadata:
+    kedro-viz:
+      layer: model_explanation
+
+beeswarm_fig:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataset
+  dataset:
+    type: matplotlib.MatplotlibDataset
+    filepath: data/07_model_output/shap_beeswarm_plot.png
+    save_args:
+      format: png
+      dpi: 300
+      bbox_inches: tight
+  metadata:
+    kedro-viz:
+      layer: model_explanation
+
 challenger_beats_champion:
   type: pickle.PickleDataset
   filepath: data/06_models/challenger_beats_champion.pkl

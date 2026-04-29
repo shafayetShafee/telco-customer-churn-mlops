@@ -10,6 +10,7 @@ from .nodes_ml.calibration import (
 )
 from .nodes_ml.hyperparameter_tuning import tune_xgb_pr_auc
 from .nodes_ml.log_model import log_calibrated_model
+from .nodes_ml.log_shap_explanation import log_shap_explanations
 from .nodes_ml.model_registry import (
     evaluate_challenger_vs_champion,
     register_model_if_champion,
@@ -99,6 +100,22 @@ def create_ml_pipeline(**kwargs) -> Pipeline:
                 ],
                 outputs=["calibrated_threshold_classifier", "logged_model_info"],
                 name="calibrated_model_logging_node",
+                tags=["training"],
+            ),
+            Node(
+                func=log_shap_explanations,
+                inputs=[
+                    "logged_model_info",
+                    "X_train",
+                    "X_test",
+                    "params:shap_options"
+                ],
+                outputs=[
+                    "logged_explainer_info",
+                    "bar_fig",
+                    "beeswarm_fig"
+                ],
+                name="shap_explainer_logging_node",
                 tags=["training"],
             ),
             Node(

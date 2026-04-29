@@ -13,6 +13,13 @@ prefit_calib_options:
   inductive: False
   random_state: ${globals:random_state}
 
+shap_options: 
+  explainer_name: "shap_explainer"
+  bg_data_size: 1000
+  eval_data_size: null
+  plots_max_display: 25
+  random_state: ${globals:random_state}
+
 mlflow_evaluate_options:
   target: "${globals:target}"
   eval_metric: "${globals:eval_metric}"

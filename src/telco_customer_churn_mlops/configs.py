@@ -1,4 +1,4 @@
-from typing import Annotated, Literal, Self
+from typing import Annotated, Literal, Self, Optional
 
 from pydantic import (
     AfterValidator,
@@ -67,6 +67,14 @@ class OptunaConfig(BaseConfig):
 class PrefitCalibConfig(BaseConfig):
     cv: Literal["prefit"] = "prefit"
     inductive: Annotated[bool, Field(strict=True)] = False
+    random_state: Annotated[int, Field(ge=0, strict=True)] = 42
+
+
+class ShapConfig(BaseConfig):
+    explainer_name: NonEmptyStr = "shap_explainer"
+    bg_data_size: Annotated[int, Field(ge=1, strict=True)] = 1000
+    eval_data_size: Annotated[int | None, Field(ge=1, strict=True)] = None
+    plots_max_display: Annotated[int, Field(ge=1, le=30, strict=True)] = 25
     random_state: Annotated[int, Field(ge=0, strict=True)] = 42
 
 
