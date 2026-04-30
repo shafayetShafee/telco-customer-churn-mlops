@@ -247,7 +247,9 @@ logged_model_info:
       layer: final_model
 
 logged_explainer_info:
-  type: kedro.io.MemoryDataset
+  # type: kedro.io.MemoryDataset
+  type: pickle.PickleDataset
+  filepath: data/06_models/logged_explainer_info.pkl
   metadata: 
     kedro-viz: 
       layer: model_explanation
@@ -292,6 +294,13 @@ registered_model_version:
     kedro-viz: 
       layer: model_registration
 
+registered_explainer_version:
+  type: pickle.PickleDataset
+  filepath: data/06_models/registered_model_version.pkl
+  metadata: 
+    kedro-viz: 
+      layer: model_registration
+      
 inference_result:
   type: kedro.io.MemoryDataset
   metadata:

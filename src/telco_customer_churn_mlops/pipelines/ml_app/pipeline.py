@@ -142,6 +142,17 @@ def create_ml_pipeline(**kwargs) -> Pipeline:
                 name="model_registration_node",
                 tags=["training"],
             ),
+            Node(
+                func=register_model_if_champion,
+                inputs=[
+                    "logged_explainer_info",
+                    "challenger_beats_champion",
+                    "params:explainer_registry_options"
+                ],
+                outputs="registered_explainer_version",
+                name="explainer_registration_node",
+                tags=["training"]
+            ),
         ]
     )
 

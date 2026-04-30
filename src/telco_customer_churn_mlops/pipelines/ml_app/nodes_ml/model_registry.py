@@ -206,9 +206,13 @@ def register_model_if_champion(
     registry_options: dict,
 ) -> ModelVersion:
     """
-    Register the calibrated threshold classifier as champion if the challenger
-    won evaluation or always_replace=True. Returns the champion ModelVersion
-    object — either the newly registered version or the existing champion.
+    Register a model artifact as champion if the challenger won evaluation
+    or always_replace=True. Returns the champion ModelVersion object —
+    either the newly registered version or the existing champion.
+
+    Can be used for any MLflow-loggable artifact, such as an ML model or
+    a SHAP explainer, as long as a corresponding registry configuration is
+    provided.
 
     Parameters
     ----------
@@ -233,17 +237,18 @@ def register_model_if_champion(
     Raises
     ------
     RuntimeError
-        If called outside an active MLflow run.
+        If called outside an active MLflow run, or if model registration fails.
     """
     reg_cfg = ModelRegistryConfig.from_params(registry_options)
 
     current_champion_version = _get_champion_version(reg_cfg)
 
-    if not (challenger_beats_champion or reg_cfg.always_replace):
-        logger.info(
-            "Challenger did not beat champion and always_replace=False — skipping registration."
-        )
-        return current_champion_version
+    if current_champion_version:
+        if not (challenger_beats_champion or reg_cfg.always_replace):
+            logger.info(
+                "Challenger did not beat champion and always_replace=False — skipping registration."
+            )
+            return current_champion_version
 
     client = mlflow.MlflowClient()
     mv = mlflow.register_model(
@@ -256,14 +261,20 @@ def register_model_if_champion(
     client.set_model_version_tag(
         reg_cfg.model_name, mv.version, "deployment_status", "production"
     )
+    if reg_cfg.eval_metric:
+        client.set_model_version_tag(
+            reg_cfg.model_name, mv.version, "eval_metric", reg_cfg.eval_metric
+        )
+
+    if current_champion_version is None:
+        promoted_by = "first_run"
+    elif reg_cfg.always_replace:
+        promoted_by = "always_replace"
+    else:
+        promoted_by = "evaluation"
+
     client.set_model_version_tag(
-        reg_cfg.model_name, mv.version, "eval_metric", reg_cfg.eval_metric
-    )
-    client.set_model_version_tag(
-        reg_cfg.model_name,
-        mv.version,
-        "promoted_by",
-        "always_replace" if reg_cfg.always_replace else "evaluation",
+        reg_cfg.model_name, mv.version, "promoted_by", promoted_by
     )
 
     if current_champion_version:
@@ -286,20 +297,20 @@ def register_model_if_champion(
 
     if current_champion_version:
         logger.info(
-            "Retiring previous champion model — name: %s | version: %s | model_id: %s\n"
+            "Retiring previous champion model — name: %s | version: %s | model_uri: %s\n"
             "(generated from run_id: %s )",
             current_champion_version.name,
             current_champion_version.version,
-            current_champion_version.model_id,
+            current_champion_version.source,
             current_champion_version.run_id,
         )
 
     logger.info(
-        "Current registered champion model — name: %s | version: %s | model_id: %s\n"
+        "Current registered champion model — name: %s | version: %s | model_uri: %s\n"
         "(generated from run_id: %s | logged run_id: %s )",
         mv.name,
         mv.version,
-        mv.model_id,
+        mv.source,
         mv.run_id,
         challenger_model_info.run_id,
     )

@@ -1,4 +1,4 @@
-from typing import Annotated, Literal, Self, Optional
+from typing import Annotated, Literal, Self
 
 from pydantic import (
     AfterValidator,
@@ -89,9 +89,9 @@ class MlflowEvaluateConfig(BaseConfig):
 class ModelRegistryConfig(BaseConfig):
     model_name: NonEmptyStr = "calibrated_threshold_classifier"
     champion_alias: NonEmptyStr = "champion"
-    inference_pipeline_name: NonEmptyStr = "churn_inference_pipeline"
+    inference_pipeline_name: NonEmptyStr | None = None
     always_replace: Annotated[bool, Field(strict=True)] = False
-    eval_metric: NonEmptyStr = "recall_score"
+    eval_metric: NonEmptyStr | None = None
 
 
 class InferenceConfig(BaseConfig):

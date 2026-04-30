@@ -4,3 +4,9 @@ model_registry_options:
   inference_pipeline_name: "churn_inference_pipeline"
   always_replace: False
   eval_metric: "${globals:eval_metric}"
+
+
+explainer_registry_options:
+  model_name: "shap_explainer"
+  champion_alias: "champion"
+  always_replace: False
