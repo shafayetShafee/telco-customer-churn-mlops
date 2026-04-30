@@ -22,20 +22,21 @@ from telco_customer_churn_mlops.configs import (
 logger = logging.getLogger(__name__)
 
 
-def _get_champion_version(config: ModelRegistryConfig) -> ModelVersion | None:
+def _get_champion_version(model_name: str, champion_alias: str) -> ModelVersion | None:
     """
     Fetch the current champion's model version from the MLflow model registry.
     Returns None if no champion is registered yet.
 
     Parameters
     ----------
-    config: ModelRegistryConfig
-        A ModelRegistryConfig pydantic model containing model_name and champion_alias.
+    model_name : str
+        The registered model name in MLflow.
+    champion_alias : str
+        The alias used to identify the champion version.
     """
     client = mlflow.MlflowClient()
     try:
-        mv = client.get_model_version_by_alias(config.model_name, config.champion_alias)
-        return mv
+        return client.get_model_version_by_alias(model_name, champion_alias)
     except MlflowException:
         logger.info("No champion registered yet.")
         return None
@@ -157,7 +158,7 @@ def evaluate_challenger_vs_champion(
         challenger_result.metrics[eval_cfg.eval_metric],
     )
 
-    champion_version = _get_champion_version(reg_cfg)
+    champion_version = _get_champion_version(reg_cfg.model_name, reg_cfg.champion_alias)
     if not champion_version:
         logger.info("No champion found — challenger wins by default (first run).")
         return True
@@ -241,7 +242,9 @@ def register_model_if_champion(
     """
     reg_cfg = ModelRegistryConfig.from_params(registry_options)
 
-    current_champion_version = _get_champion_version(reg_cfg)
+    current_champion_version = _get_champion_version(
+        reg_cfg.model_name, reg_cfg.champion_alias
+    )
 
     if current_champion_version:
         if not (challenger_beats_champion or reg_cfg.always_replace):

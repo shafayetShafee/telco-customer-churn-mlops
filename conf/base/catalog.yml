@@ -300,7 +300,7 @@ registered_explainer_version:
   metadata: 
     kedro-viz: 
       layer: model_registration
-      
+
 inference_result:
   type: kedro.io.MemoryDataset
   metadata:
@@ -312,7 +312,40 @@ served_predictions:
   filepath: data/08_reporting/served_predictions.csv
   metadata:
     kedro-viz:
-      layer: inference  
+      layer: inference
+
+served_shap_values:
+  type: pickle.PickleDataset
+  filepath: data/08_reporting/served_shap_values.pkl
+  metadata:
+    kedro-viz:
+      layer: inference_explanations
+
+inference_shap_barplot:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataset
+  dataset:
+    type: matplotlib.MatplotlibDataset
+    filepath: data/08_reporting/inference_shap_barplot.png
+    save_args:
+      format: png
+      dpi: 300
+      bbox_inches: tight
+  metadata:
+    kedro-viz:
+      layer: inference_explanations
+
+inference_shap_bees_plot:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataset
+  dataset:
+    type: matplotlib.MatplotlibDataset
+    filepath: data/08_reporting/inference_shap_bees_plot.png
+    save_args:
+      format: png
+      dpi: 300
+      bbox_inches: tight
+  metadata:
+    kedro-viz:
+      layer: inference_explanations
 
 # pipeline_inference_model:
 #   type: kedro_mlflow.io.models.MlflowModelTrackingDataset
