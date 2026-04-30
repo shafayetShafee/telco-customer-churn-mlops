@@ -108,13 +108,9 @@ def create_ml_pipeline(**kwargs) -> Pipeline:
                     "logged_model_info",
                     "X_train",
                     "X_test",
-                    "params:shap_options"
+                    "params:shap_options",
                 ],
-                outputs=[
-                    "logged_explainer_info",
-                    "bar_fig",
-                    "beeswarm_fig"
-                ],
+                outputs=["logged_explainer_info", "bar_fig", "beeswarm_fig"],
                 name="shap_explainer_logging_node",
                 tags=["training"],
             ),
@@ -147,11 +143,11 @@ def create_ml_pipeline(**kwargs) -> Pipeline:
                 inputs=[
                     "logged_explainer_info",
                     "challenger_beats_champion",
-                    "params:explainer_registry_options"
+                    "params:explainer_registry_options",
                 ],
                 outputs="registered_explainer_version",
                 name="explainer_registration_node",
-                tags=["training"]
+                tags=["training"],
             ),
         ]
     )

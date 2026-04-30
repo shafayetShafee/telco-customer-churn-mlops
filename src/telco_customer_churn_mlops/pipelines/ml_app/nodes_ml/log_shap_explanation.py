@@ -1,10 +1,11 @@
 import logging
-import matplotlib.pyplot as plt
-import pandas as pd
-import mlflow
-import shap
 
+import matplotlib.pyplot as plt
+import mlflow
+import pandas as pd
+import shap
 from mlflow.models.model import ModelInfo
+
 from telco_customer_churn_mlops.configs import ShapConfig
 
 logger = logging.getLogger(__name__)
@@ -14,7 +15,7 @@ def log_shap_explanations(
     logged_model_info: ModelInfo,
     X_train: pd.DataFrame,
     X_test: pd.DataFrame,
-    config: dict
+    config: dict,
 ) -> tuple[ModelInfo, plt.Figure, plt.Figure]:
     """
     Build a SHAP explainer for a logged MLflow PythonModel, compute SHAP values
@@ -64,44 +65,47 @@ def log_shap_explanations(
     """
     if X_train.empty or X_test.empty:
         raise ValueError("X_train and X_test must not be empty.")
-    
+
     logger.info("Building SHAP Explainer for model ID: %s", logged_model_info.model_id)
-    
+
     mlflow_model = mlflow.pyfunc.load_model(
-        model_uri=logged_model_info.model_uri, 
+        model_uri=logged_model_info.model_uri,
         suppress_warnings=True,
     )
     model = mlflow_model.unwrap_python_model()
 
     shap_config = ShapConfig.from_params(config)
-    logger.info("Building SHAP explainer (background size: %d)", shap_config.bg_data_size)
+    logger.info(
+        "Building SHAP explainer (background size: %d)", shap_config.bg_data_size
+    )
 
     bg_data = shap.utils.sample(
         X=X_train,
         nsamples=shap_config.bg_data_size,
-        random_state=shap_config.random_state
+        random_state=shap_config.random_state,
     )
 
-    predict_fn_pos = lambda x: model.predict_proba(x)[:, 1]
+    def predict_fn_pos(x):
+        return model.predict_proba(x)[:, 1]
 
     explainer = shap.Explainer(
-        model=predict_fn_pos, 
-        masker=bg_data, 
-        seed=shap_config.random_state
+        model=predict_fn_pos, masker=bg_data, seed=shap_config.random_state
     )
 
     explainer_info = mlflow.shap.log_explainer(
         explainer=explainer,
         name=shap_config.explainer_name,
         serialize_model_using_mlflow=True,
-        signature=None
+        signature=None,
     )
 
     logger.info("Logged explainer ID: %s", explainer_info.model_id)
     logger.info("Logged explainer run ID: %s", explainer_info.run_id)
 
     eval_data = (
-        shap.utils.sample(X_test, shap_config.eval_data_size, random_state=shap_config.random_state)
+        shap.utils.sample(
+            X_test, shap_config.eval_data_size, random_state=shap_config.random_state
+        )
         if shap_config.eval_data_size
         else X_test
     )
@@ -143,7 +147,9 @@ def _build_shap_plots(
     ax.set_title("SHAP Feature Importance (Mean |SHAP|)")
 
     beeswarm_fig, ax = plt.subplots(tight_layout=True, figsize=(12, 6))
-    shap.plots.beeswarm(shap_values, max_display=max_display, show=False, ax=ax, plot_size = None)
+    shap.plots.beeswarm(
+        shap_values, max_display=max_display, show=False, ax=ax, plot_size=None
+    )
     ax.set_title("SHAP Beeswarm — Feature Impact Distribution")
 
     return bar_fig, beeswarm_fig
