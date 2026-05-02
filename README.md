@@ -1,102 +1,72 @@
-# telco-customer-churn-mlops
+# Telco Customer Churn - Kedro + MLflow Demo
 
-[![Powered by Kedro](https://img.shields.io/badge/powered_by-kedro-ffc900?logo=kedro)](https://kedro.org)
-![MLflow](https://shields.io)
+A simple end-to-end machine learning project for predicting customer churn.  
+This project demonstrates how to structure a production-style ML workflow with:
 
-## Overview
+- Structured pipelines using Kedro  
+- Experiment tracking using MLflow  
+- Data validation with Great Expectations  
+- Hyperparameter tuning with Optuna  
+- Threshold tuning to optimize recall  
+- Model calibration using Venn-Abers calibration  
+- Model explainability with SHAP  
 
-This is your new Kedro project, which was generated using `kedro 1.2.0`.
 
-Take a look at the [Kedro documentation](https://docs.kedro.org) to get started.
+## Setup & Run
 
-## Rules and guidelines
+### Prerequisites
 
-In order to get the best out of the template:
+- Python >= 3.10  
+- uv (Python package manager)
 
-* Don't remove any lines from the `.gitignore` file we provide
-* Make sure your results can be reproduced by following a data engineering convention
-* Don't commit data to your repository
-* Don't commit any credentials or your local configuration to your repository. Keep all your credentials and local configuration in `conf/local/`
+---
 
-## How to install dependencies
+### 1. Clone the repository
 
-Declare any dependencies in `requirements.txt` for `pip` installation.
-
-To install them, run:
-
-```
-pip install -r requirements.txt
-```
-
-## How to run your Kedro pipeline
-
-You can run your Kedro project with:
-
-```
-kedro run
+```bash
+git clone https://github.com/shafayetShafee/telco-customer-churn-mlops.git
+cd telco-customer-churn-mlops
 ```
 
-## How to test your Kedro project
+### 2. Install dependencies
 
-Have a look at the file `tests/test_run.py` for instructions on how to write your tests. You can run your tests as follows:
-
-```
-pytest
+```bash
+uv sync --all-extras
 ```
 
-You can configure the coverage threshold in your project's `pyproject.toml` file under the `[tool.coverage.report]` section.
+### 3. Train the model
 
-
-## Project dependencies
-
-To see and update the dependency requirements for your project use `requirements.txt`. You can install the project requirements with `pip install -r requirements.txt`.
-
-[Further information about project dependencies](https://docs.kedro.org/en/stable/kedro_project_setup/dependencies.html#project-specific-dependencies)
-
-## How to work with Kedro and notebooks
-
-> Note: Using `kedro jupyter` or `kedro ipython` to run your notebook provides these variables in scope: `context`, 'session', `catalog`, and `pipelines`.
->
-> Jupyter, JupyterLab, and IPython are already included in the project requirements by default, so once you have run `pip install -r requirements.txt` you will not need to take any extra steps before you use them.
-
-### Jupyter
-To use Jupyter notebooks in your Kedro project, you need to install Jupyter:
-
-```
-pip install jupyter
+```bash
+kedro run --pipeline=train
 ```
 
-After installing Jupyter, you can start a local notebook server:
+### 4. Run inference
 
-```
-kedro jupyter notebook
-```
-
-### JupyterLab
-To use JupyterLab, you need to install it:
-
-```
-pip install jupyterlab
+```bash
+kedro run --pipeline=user
 ```
 
-You can also start JupyterLab:
 
-```
-kedro jupyter lab
-```
+## Kedro Viz
 
-### IPython
-And if you want to run an IPython session:
+Run the following from the project root directory, 
 
-```
-kedro ipython
+```bash
+kedro viz run -a --include-hooks
 ```
 
-### How to ignore notebook output cells in `git`
-To automatically strip out all output cell contents before committing to `git`, you can use tools like [`nbstripout`](https://github.com/kynan/nbstripout). For example, you can add a hook in `.git/config` with `nbstripout --install`. This will run `nbstripout` before anything is committed to `git`.
+## ETL Pipeline
 
-> *Note:* Your output cells will be retained locally.
+![ETL Pipeline](imgs/kedro-etl-pipeline.png)
 
-## Package your Kedro project
 
-[Further information about building project documentation and packaging your project](https://docs.kedro.org/en/stable/deploy/package_a_project/#package-an-entire-kedro-project)
+## Train Pipeline
+
+![Train Pipeline](imgs/kedro-train-pipeline.png)
+
+
+## User Pipeline
+
+![User Pipeline](imgs/kedro-user-pipeline.png)
+
+
