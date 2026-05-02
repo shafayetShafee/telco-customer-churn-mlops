@@ -13,11 +13,27 @@ from .nodes import (
     clean_names,
 )
 
+from telco_customer_churn_mlops.expectations import validate_dataset
+
 
 def create_etl_pipeline(**kwargs) -> Pipeline:
 
     etl_train_data_pipeline = Pipeline(
         [
+            Node(
+                func=validate_dataset,
+                inputs=[
+                    "telco",
+                    "params:features",
+                    "params:column_types",
+                    "params:train_data_type",
+                    "params:train_data_type",
+                    "params:target_column",
+                ],
+                outputs="gx_train_result",
+                name="gx_train_validation_node",
+                tags=["training"],
+            ),
             Node(
                 func=extract_encode_target_col,
                 inputs=["telco", "params:target_column"],

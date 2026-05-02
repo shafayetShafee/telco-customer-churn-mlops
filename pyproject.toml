@@ -27,7 +27,8 @@ dependencies = [
     "kedro-mlflow~=2.0.2",
     "shap==0.49.1",
     "pydantic==2.12.5",
-    "typing-extensions==4.15.0"
+    "typing-extensions==4.15.0",
+    "great-expectations==1.17.0",
 ]
 
 [project.scripts]

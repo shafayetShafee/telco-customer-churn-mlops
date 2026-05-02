@@ -1,3 +1,6 @@
+train_data_type: "train"
+infer_data_type: "infer"
+
 target_column: Churn
 
 features:
@@ -24,3 +27,25 @@ features:
 multi_cat_features:
   - Contract
   - PaymentMethod
+
+column_types:
+  gender: object
+  SeniorCitizen: int64
+  Partner: object
+  Dependents: object
+  tenure: int64
+  PhoneService: object
+  MultipleLines: object
+  InternetService: object
+  OnlineSecurity: object
+  OnlineBackup: object
+  DeviceProtection: object
+  TechSupport: object
+  StreamingTV: object
+  StreamingMovies: object
+  Contract: object
+  PaperlessBilling: object
+  PaymentMethod: object
+  MonthlyCharges: float64
+  TotalCharges: object
+  Churn: object

@@ -1,16 +1,25 @@
-"""
-This is a boilerplate pipeline 'user_app'
-generated using Kedro 1.2.0
-"""
-
 from kedro.pipeline import Node, Pipeline  # noqa
 
 from .nodes import serve_predictions, serve_shap_values
+from telco_customer_churn_mlops.expectations import validate_dataset
 
 
 def create_user_pipeline(**kwargs) -> Pipeline:
     return Pipeline(
         [
+            Node(
+                func=validate_dataset,
+                inputs=[
+                    "telco_future",
+                    "params:features",
+                    "params:column_types",
+                    "params:infer_data_type",
+                    "params:infer_data_type",
+                ],
+                outputs="gx_infer_result",
+                name="gx_infer_validation_node",
+                tags=["user"],
+            ),
             Node(
                 func=serve_predictions,
                 inputs=["telco_future", "params:model_registry_options"],

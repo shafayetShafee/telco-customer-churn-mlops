@@ -13,13 +13,17 @@ telco_future:
     kedro-viz:
       layer: raw
 
-future_infer_data:
+gx_train_result:
   type: kedro.io.MemoryDataset
   metadata:
-    metadata:
     kedro-viz:
-      layer: raw
+      layer: gx-validation
 
+gx_infer_result:
+  type: kedro.io.MemoryDataset
+  metadata:
+    kedro-viz:
+      layer: gx-validation
 
 "cleaned_{train_infer}_data":
   type: pandas.ParquetDataset
@@ -27,20 +31,6 @@ future_infer_data:
   metadata:
     kedro-viz:
       layer: intermediate
-
-# cleaned_features_data:
-#   type: pandas.ParquetDataset
-#   filepath: data/02_intermediate/cleaned_features_data.parquet
-#   metadata:
-#     kedro-viz:
-#       layer: intermediate
-
-# cleaned_inference_data:
-#   type: pandas.ParquetDataset
-#   filepath: data/02_intermediate/cleaned_inference_data.parquet
-#   metadata:
-#     kedro-viz:
-#       layer: intermediate
 
 multi_cat_encoder:
   type: pickle.PickleDataset
@@ -56,20 +46,6 @@ multi_cat_encoder:
     kedro-viz:
       layer: intermediate
 
-# multi_cat_encoded_df:
-#   type: pandas.ParquetDataset
-#   filepath: data/02_intermediate/multi_cat_encoded_df.parquet
-#   metadata:
-#     kedro-viz:
-#       layer: intermediate
-
-# multi_cat_encoded_inference_df:
-#   type: pandas.ParquetDataset
-#   filepath: data/02_intermediate/multi_cat_encoded_inference_df.parquet
-#   metadata:
-#     kedro-viz:
-#       layer: intermediate
-
 processed_target_col:
   type: pickle.PickleDataset
   filepath: data/03_primary/processed_target_col.pkl
@@ -77,27 +53,12 @@ processed_target_col:
     kedro-viz:
       layer: primary
 
-
 "processed_{train_infer}_data":
   type: pandas.ParquetDataset
   filepath: data/03_primary/processed_{train_infer}_features_data.parquet
   metadata:
     kedro-viz:
       layer: primary
-
-# processed_features_data:
-#   type: pandas.ParquetDataset
-#   filepath: data/03_primary/processed_features_data.parquet
-#   metadata:
-#     kedro-viz:
-#       layer: primary
-
-# processed_inference_data:
-#   type: pandas.ParquetDataset
-#   filepath: data/03_primary/processed_inference_data.parquet
-#   metadata:
-#     kedro-viz:
-#       layer: primary
 
 X_train:
   # type: kedro.io.MemoryDataset
@@ -217,22 +178,6 @@ calibration_reliability_plot:
     kedro-viz:
       layer: tuning_and_calibration_output
 
-# classification_report_df:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataset
-#   dataset: 
-#     type: pandas.CSVDataset
-#     filepath: data/08_reporting/classification_report_df.csv
-#   metadata:
-#     kedro-viz:
-#       layer: model_evaluation
-
-# calibrated_full_xgb_model:
-#   type: pickle.PickleDataset
-#   filepath: data/06_models/calibrated_full_xgb_model.pkl
-#   metadata:
-#     kedro-viz:
-#       layer: full_model
-
 calibrated_threshold_classifier:
   type: pickle.PickleDataset
   filepath: data/06_models/calibrated_threshold_classifier.pkl
@@ -346,10 +291,3 @@ inference_shap_bees_plot:
   metadata:
     kedro-viz:
       layer: inference_explanations
-
-# pipeline_inference_model:
-#   type: kedro_mlflow.io.models.MlflowModelTrackingDataset
-#   flavor: mlflow.pyfunc
-#   pyfunc_workflow: python_model
-#   load_args:
-#     model_uri: "runs:/827f79ef44974b93a746a8e676392124/final_churn_model"
